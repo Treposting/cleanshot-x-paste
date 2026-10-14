@@ -13,6 +13,9 @@ enum Preferences {
         case historyLimit
         case autoPaste
         case monitorPaused
+        case recordFPS
+        case recordShowCursor
+        case recordAudio
     }
 
     static var defaults: UserDefaults { .standard }
@@ -34,6 +37,9 @@ enum Preferences {
             Key.historyLimit.rawValue: 500,
             Key.autoPaste.rawValue: true,
             Key.monitorPaused.rawValue: false,
+            Key.recordFPS.rawValue: 30,
+            Key.recordShowCursor.rawValue: true,
+            Key.recordAudio.rawValue: false,
         ])
     }
 
@@ -45,6 +51,10 @@ enum Preferences {
     static var overlayTimeout: Int { defaults.integer(forKey: Key.overlayTimeout.rawValue) }
     static var historyLimit: Int { max(10, defaults.integer(forKey: Key.historyLimit.rawValue)) }
     static var autoPaste: Bool { defaults.bool(forKey: Key.autoPaste.rawValue) }
+
+    static var recordFPS: Int { defaults.integer(forKey: Key.recordFPS.rawValue) == 60 ? 60 : 30 }
+    static var recordShowCursor: Bool { defaults.bool(forKey: Key.recordShowCursor.rawValue) }
+    static var recordAudio: Bool { defaults.bool(forKey: Key.recordAudio.rawValue) }
 
     static var monitorPaused: Bool {
         get { defaults.bool(forKey: Key.monitorPaused.rawValue) }

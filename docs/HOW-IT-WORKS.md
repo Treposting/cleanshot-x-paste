@@ -23,7 +23,10 @@ This project is a **clean-room reimplementation**. We did not decompile, disasse
 | Pixelate | Core Image `CIPixellate`, clipped to the selected rect | `AnnotationRenderer.pixelate` |
 | Pin | Borderless floating `NSPanel` with an `NSImageView` | `Capture/PinnedImageWindow.swift` |
 | OCR | Vision `VNRecognizeTextRequest` | `Capture/TextRecognizer.swift` |
-| Screen recording | `ScreenCaptureKit` `SCStream` → `AVAssetWriter` | roadmap |
+| Screen recording | `ScreenCaptureKit` `SCStream` (with `sourceRect` for an area) → `AVAssetWriter` H.264/AAC MP4 | `Record/ScreenRecorder.swift`, `Record/RecordingOutput.swift` |
+| Area picker for recording | Full-screen transparent window with a crosshair drag selection | `Record/AreaSelector.swift` |
+| GIF export | `AVAssetImageGenerator` frames → `CGImageDestination` (GIF) | `Record/VideoTools.swift` |
+| Custom shortcuts | Recorder UI captures `keyDown`; stored in UserDefaults and re-registered with Carbon | `App/Shortcuts.swift`, `UI/ShortcutRecorder.swift` |
 | Scrolling capture | Repeated captures while scrolling, stitched by matching overlapping rows | roadmap |
 
 ## Paste: observed behavior

@@ -1,17 +1,27 @@
 import AppKit
 
-/// One screenshot that is alive in the Quick Access overlay / editor.
+/// One screenshot or screen recording that is alive in the Quick Access overlay / editor.
 @MainActor
 final class Capture: ObservableObject, Identifiable {
+    enum Kind {
+        case image
+        case video
+    }
+
     let id = UUID()
+    let kind: Kind
     let url: URL
     let date = Date()
+    /// The screenshot itself, or a poster frame for videos.
     @Published private(set) var image: NSImage
 
-    init(url: URL, image: NSImage) {
+    init(url: URL, image: NSImage, kind: Kind = .image) {
         self.url = url
         self.image = image
+        self.kind = kind
     }
+
+    var isVideo: Bool { kind == .video }
 
     /// Replace the image (e.g. after annotating) and keep the temp file in sync so
     /// drag & drop hands out the edited version.
@@ -23,7 +33,15 @@ final class Capture: ObservableObject, Identifiable {
     }
 
     func copyToPasteboard() {
-        image.copyToPasteboard()
+        switch kind {
+        case .image:
+            image.copyToPasteboard()
+        case .video:
+            // Copy the file itself, so pasting into Finder, Slack, Mail... attaches the video.
+            let pb = NSPasteboard.general
+            pb.clearContents()
+            pb.writeObjects([url as NSURL])
+        }
     }
 
     /// Saves into the configured screenshots folder and returns the destination.
@@ -31,15 +49,15 @@ final class Capture: ObservableObject, Identifiable {
     func save() -> URL? {
         let folder = Preferences.saveFolder
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        var dest = folder.appendingPathComponent(Capture.fileName(for: date))
-        var n = 2
-        while FileManager.default.fileExists(atPath: dest.path) {
-            dest = folder.appendingPathComponent(Capture.fileName(for: date, suffix: " (\(n))"))
-            n += 1
-        }
-        guard let data = image.pngData else { return nil }
+        let ext = isVideo ? "mp4" : "png"
+        let dest = Capture.uniqueURL(in: folder, date: date, ext: ext)
         do {
-            try data.write(to: dest, options: .atomic)
+            if isVideo {
+                try FileManager.default.copyItem(at: url, to: dest)
+            } else {
+                guard let data = image.pngData else { return nil }
+                try data.write(to: dest, options: .atomic)
+            }
             return dest
         } catch {
             NSLog("ShotPaste: save failed: \(error)")
@@ -47,11 +65,23 @@ final class Capture: ObservableObject, Identifiable {
         }
     }
 
-    static func fileName(for date: Date, suffix: String = "") -> String {
+    static func fileName(for date: Date, suffix: String = "", ext: String = "png") -> String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        return "ShotPaste \(f.string(from: date))\(suffix).png"
+        let prefix = ext == "png" ? "ShotPaste" : "ShotPaste Recording"
+        return "\(prefix) \(f.string(from: date))\(suffix).\(ext)"
+    }
+
+    /// A file URL in `folder` that does not exist yet ("… (2).png" etc.).
+    static func uniqueURL(in folder: URL, date: Date, ext: String) -> URL {
+        var dest = folder.appendingPathComponent(fileName(for: date, ext: ext))
+        var n = 2
+        while FileManager.default.fileExists(atPath: dest.path) {
+            dest = folder.appendingPathComponent(fileName(for: date, suffix: " (\(n))", ext: ext))
+            n += 1
+        }
+        return dest
     }
 }
 

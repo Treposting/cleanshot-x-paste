@@ -1,0 +1,151 @@
+import AppKit
+import ScreenCaptureKit
+
+/// Screen recording with ScreenCaptureKit (macOS 12.3+), the same framework
+/// CleanShot X, QuickTime and OBS use on modern macOS.
+@MainActor
+final class ScreenRecorder {
+    private var stream: SCStream?
+    private var output: RecordingOutput?
+    private var borderWindow: NSWindow?
+
+    private(set) var startDate: Date?
+    var isRecording: Bool { stream != nil }
+
+    /// Called when the stream stops on its own (display disconnected, permission revoked…).
+    var onUnexpectedStop: (() -> Void)?
+
+    func start(screen: NSScreen, rect: CGRect) async throws {
+        guard !isRecording else { throw RecorderError.alreadyRecording }
+
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        guard let displayID = screen.displayID,
+              let display = content.displays.first(where: { $0.displayID == displayID }) else {
+            throw RecorderError.displayNotFound
+        }
+
+        // Keep ShotPaste's own windows (selection border, overlays) out of the video.
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let ownApps = content.applications.filter { $0.processID == pid }
+        let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
+
+        // ScreenCaptureKit wants the source rect in display-local points with a top-left origin.
+        let local = CGRect(
+            x: rect.minX - screen.frame.minX,
+            y: screen.frame.maxY - rect.maxY,
+            width: rect.width,
+            height: rect.height
+        ).integral
+
+        let (width, height) = Self.outputSize(for: local.size, backingScale: screen.backingScaleFactor)
+        let fps = Preferences.recordFPS
+        let captureAudio = Preferences.recordAudio
+
+        let config = SCStreamConfiguration()
+        config.sourceRect = local
+        config.width = width
+        config.height = height
+        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(fps))
+        config.showsCursor = Preferences.recordShowCursor
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+        config.queueDepth = 6
+        config.capturesAudio = captureAudio
+        config.excludesCurrentProcessAudio = true
+        config.sampleRate = 48_000
+        config.channelCount = 2
+
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ShotPaste-\(UUID().uuidString).mp4")
+        let output = try RecordingOutput(url: url, width: width, height: height, fps: fps, captureAudio: captureAudio)
+        output.onStreamError = { [weak self] error in
+            NSLog("ShotPaste: recording stream stopped: \(error)")
+            Task { @MainActor in self?.onUnexpectedStop?() }
+        }
+
+        let stream = SCStream(filter: filter, configuration: config, delegate: output)
+        try stream.addStreamOutput(output, type: .screen, sampleHandlerQueue: output.queue)
+        if captureAudio {
+            try stream.addStreamOutput(output, type: .audio, sampleHandlerQueue: output.queue)
+        }
+        try await stream.startCapture()
+
+        self.stream = stream
+        self.output = output
+        startDate = Date()
+        if rect != screen.frame {
+            showBorder(around: rect)
+        }
+    }
+
+    /// Stops and returns the finished MP4, or nil if nothing was captured.
+    func stop() async -> URL? {
+        guard let stream, let output else { return nil }
+        self.stream = nil
+        self.output = nil
+        startDate = nil
+        hideBorder()
+        do {
+            try await stream.stopCapture()
+        } catch {
+            NSLog("ShotPaste: stopCapture failed: \(error)")
+        }
+        return await output.finish()
+    }
+
+    /// Pixel size of the video: Retina resolution, but kept within H.264's
+    /// 4096×2304 hardware-encoder limit, and even in both dimensions.
+    private static func outputSize(for size: CGSize, backingScale: CGFloat) -> (Int, Int) {
+        let landscape = size.width >= size.height
+        let maxW: CGFloat = landscape ? 4096 : 2304
+        let maxH: CGFloat = landscape ? 2304 : 4096
+        let scale = min(backingScale, maxW / max(size.width, 1), maxH / max(size.height, 1))
+        func even(_ v: CGFloat) -> Int { max(2, Int(v) / 2 * 2) }
+        return (even(size.width * scale), even(size.height * scale))
+    }
+
+    // MARK: - Border around the recorded area
+
+    private func showBorder(around rect: CGRect) {
+        let window = NSWindow(
+            contentRect: rect.insetBy(dx: -4, dy: -4),
+            styleMask: [.borderless],
+            backing: .buffered, defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.ignoresMouseEvents = true
+        window.level = .statusBar
+        window.hasShadow = false
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        window.contentView = RecordingBorderView()
+        window.orderFrontRegardless()
+        borderWindow = window
+    }
+
+    private func hideBorder() {
+        borderWindow?.orderOut(nil)
+        borderWindow = nil
+    }
+}
+
+private final class RecordingBorderView: NSView {
+    override func draw(_ dirtyRect: NSRect) {
+        let path = NSBezierPath(rect: bounds.insetBy(dx: 2, dy: 2))
+        path.lineWidth = 2
+        NSColor.systemRed.setStroke()
+        path.setLineDash([8, 4], count: 2, phase: 0)
+        path.stroke()
+    }
+}
+
+extension NSScreen {
+    var displayID: CGDirectDisplayID? {
+        (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+    }
+
+    static var underMouse: NSScreen? {
+        let mouse = NSEvent.mouseLocation
+        return screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? main
+    }
+}

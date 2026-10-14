@@ -82,8 +82,29 @@ final class QuickAccessManager {
         case .pin:
             PinnedImageWindow.pin(capture.image)
             dismiss(capture)
+        case .open:
+            NSWorkspace.shared.open(capture.url)
+        case .saveGIF:
+            exportGIF(capture)
         case .close:
             dismiss(capture)
+        }
+    }
+
+    private func exportGIF(_ capture: Capture) {
+        let folder = Preferences.saveFolder
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let dest = Capture.uniqueURL(in: folder, date: capture.date, ext: "gif")
+        let source = capture.url
+        Toast.show("Creating GIF…", duration: 30)
+        Task {
+            do {
+                try await VideoTools.exportGIF(from: source, to: dest)
+                Toast.show("Saved \(dest.lastPathComponent)")
+                NSWorkspace.shared.activateFileViewerSelecting([dest])
+            } catch {
+                Toast.show(error.localizedDescription)
+            }
         }
     }
 
@@ -100,7 +121,7 @@ final class QuickAccessManager {
 }
 
 enum QuickAccessAction {
-    case copy, save, annotate, pin, close
+    case copy, save, annotate, pin, open, saveGIF, close
 }
 
 @MainActor
@@ -117,6 +138,15 @@ struct QuickAccessView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay {
+                        if capture.isVideo {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 34))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.45))
+                                .onTapGesture { onAction(.open) }
+                        }
+                    }
                     .onDrag {
                         NSItemProvider(contentsOf: capture.url) ?? NSItemProvider()
                     }
@@ -125,8 +155,13 @@ struct QuickAccessView: View {
                 HStack(spacing: 6) {
                     actionButton("doc.on.doc", "Copy") { onAction(.copy) }
                     actionButton("square.and.arrow.down", "Save") { onAction(.save) }
-                    actionButton("pencil.tip.crop.circle", "Annotate") { onAction(.annotate) }
-                    actionButton("pin", "Pin to screen") { onAction(.pin) }
+                    if capture.isVideo {
+                        actionButton("photo.stack", "Save as GIF") { onAction(.saveGIF) }
+                        actionButton("play.rectangle", "Open") { onAction(.open) }
+                    } else {
+                        actionButton("pencil.tip.crop.circle", "Annotate") { onAction(.annotate) }
+                        actionButton("pin", "Pin to screen") { onAction(.pin) }
+                    }
                 }
             }
             .padding(10)

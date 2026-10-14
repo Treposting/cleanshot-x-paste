@@ -7,11 +7,12 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             CaptureSettings().tabItem { Label("Capture", systemImage: "camera.viewfinder") }
+            RecordingSettings().tabItem { Label("Recording", systemImage: "record.circle") }
             ClipboardSettings().tabItem { Label("Clipboard", systemImage: "doc.on.clipboard") }
             ShortcutsSettings().tabItem { Label("Shortcuts", systemImage: "keyboard") }
         }
         .padding(20)
-        .frame(width: 480, height: 340)
+        .frame(width: 560, height: 480)
     }
 }
 
@@ -134,35 +135,49 @@ private struct ClipboardSettings: View {
 }
 
 @MainActor
-private struct ShortcutsSettings: View {
-    private struct Row: Identifiable {
-        let title: String
-        let keys: String
-        var id: String { title }
-    }
-
-    private let rows: [Row] = [
-        Row(title: "Capture area", keys: "⌥⇧⌘4"),
-        Row(title: "Capture window", keys: "⌥⇧⌘5"),
-        Row(title: "Capture fullscreen", keys: "⌥⇧⌘3"),
-        Row(title: "Capture text (OCR)", keys: "⌥⇧⌘2"),
-        Row(title: "Clipboard history", keys: "⇧⌘V"),
-    ]
+private struct RecordingSettings: View {
+    @AppStorage(Preferences.Key.recordFPS.rawValue) private var fps = 30
+    @AppStorage(Preferences.Key.recordShowCursor.rawValue) private var showCursor = true
+    @AppStorage(Preferences.Key.recordAudio.rawValue) private var recordAudio = false
 
     var body: some View {
         Form {
+            Section("Video") {
+                Picker("Frame rate", selection: $fps) {
+                    Text("30 fps").tag(30)
+                    Text("60 fps").tag(60)
+                }
+                Toggle("Show mouse cursor", isOn: $showCursor)
+                Toggle("Record computer audio", isOn: $recordAudio)
+            }
+            Text("Recordings are saved as H.264 MP4. Use \u{201C}Save as GIF\u{201D} in the overlay to export a GIF. Click the red stop button in the menu bar (or press the record shortcut again) to finish.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .formStyle(.grouped)
+    }
+}
+
+@MainActor
+private struct ShortcutsSettings: View {
+    var body: some View {
+        Form {
             Section("Global shortcuts") {
-                ForEach(rows) { row in
+                ForEach(ShortcutAction.allCases) { action in
                     HStack {
-                        Text(row.title)
+                        Text(action.title)
                         Spacer()
-                        Text(row.keys).font(.system(.body, design: .monospaced)).foregroundStyle(.secondary)
+                        ShortcutRecorder(action: action)
                     }
                 }
             }
-            Text("While selecting an area: Space toggles window mode, Esc cancels.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack {
+                Text("Click a shortcut and press new keys. \u{232B} removes it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Restore Defaults") { ShortcutStore.resetAll() }
+            }
         }
         .formStyle(.grouped)
     }

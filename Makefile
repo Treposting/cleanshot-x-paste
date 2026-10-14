@@ -1,4 +1,4 @@
-.PHONY: build app run install clean
+.PHONY: build app run install dmg clean
 
 build:
 	swift build
@@ -13,6 +13,9 @@ install: app
 	rm -rf /Applications/ShotPaste.app
 	cp -R build/ShotPaste.app /Applications/
 	open /Applications/ShotPaste.app
+
+dmg:
+	./scripts/make-dmg.sh
 
 clean:
 	rm -rf .build build
