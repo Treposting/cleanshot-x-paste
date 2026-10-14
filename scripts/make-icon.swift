@@ -20,42 +20,35 @@ func render(_ pixels: Int) -> Data {
     ctx.translateBy(x: 0, y: s)
     ctx.scaleBy(x: s / 512, y: -s / 512)
 
-    let accent = NSColor(calibratedRed: 0x3D / 255, green: 0x3B / 255, blue: 0xF3 / 255, alpha: 1)
+    let yellow = NSColor(calibratedRed: 0xFF / 255, green: 0xCF / 255, blue: 0x1A / 255, alpha: 1)
+    let ink = NSColor(calibratedRed: 0x1D / 255, green: 0x1D / 255, blue: 0x1F / 255, alpha: 1)
 
-    // Background tile.
-    accent.setFill()
-    NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 112, yRadius: 112).fill()
+    // Tile.
+    yellow.setFill()
+    NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 116, yRadius: 116).fill()
 
-    // Viewfinder corners.
-    let corners = NSBezierPath()
-    corners.lineWidth = 28
-    corners.lineCapStyle = .round
-    corners.lineJoinStyle = .round
-    func corner(start: NSPoint, center: NSPoint, from: CGFloat, to: CGFloat, end: NSPoint) {
-        corners.move(to: start)
-        corners.appendArc(withCenter: center, radius: 40, startAngle: from, endAngle: to)
-        corners.line(to: end)
-    }
-    corner(start: NSPoint(x: 104, y: 184), center: NSPoint(x: 144, y: 144), from: 180, to: 270, end: NSPoint(x: 184, y: 104))
-    corner(start: NSPoint(x: 328, y: 104), center: NSPoint(x: 368, y: 144), from: 270, to: 360, end: NSPoint(x: 408, y: 184))
-    corner(start: NSPoint(x: 408, y: 328), center: NSPoint(x: 368, y: 368), from: 0, to: 90, end: NSPoint(x: 328, y: 408))
-    corner(start: NSPoint(x: 184, y: 408), center: NSPoint(x: 144, y: 368), from: 90, to: 180, end: NSPoint(x: 104, y: 328))
-    NSColor.white.setStroke()
-    corners.stroke()
+    // Selection brackets (top-left and bottom-right).
+    let brackets = NSBezierPath()
+    brackets.lineWidth = 34
+    brackets.lineCapStyle = .round
+    brackets.lineJoinStyle = .round
+    brackets.move(to: NSPoint(x: 112, y: 196))
+    brackets.line(to: NSPoint(x: 112, y: 128))
+    brackets.appendArc(withCenter: NSPoint(x: 128, y: 128), radius: 16, startAngle: 180, endAngle: 270)
+    brackets.line(to: NSPoint(x: 196, y: 112))
+    brackets.move(to: NSPoint(x: 400, y: 316))
+    brackets.line(to: NSPoint(x: 400, y: 384))
+    brackets.appendArc(withCenter: NSPoint(x: 384, y: 384), radius: 16, startAngle: 0, endAngle: 90)
+    brackets.line(to: NSPoint(x: 316, y: 400))
+    ink.setStroke()
+    brackets.stroke()
 
-    // Clipboard.
-    NSColor.white.setFill()
-    NSBezierPath(roundedRect: NSRect(x: 180, y: 180, width: 152, height: 172), xRadius: 24, yRadius: 24).fill()
-    let clip = NSBezierPath(roundedRect: NSRect(x: 216, y: 158, width: 80, height: 44), xRadius: 14, yRadius: 14)
-    clip.fill()
-    clip.lineWidth = 10
-    accent.setStroke()
-    clip.stroke()
-
-    accent.withAlphaComponent(0.5).setFill()
-    for (y, w) in [(236.0, 88.0), (270.0, 64.0), (304.0, 80.0)] {
-        NSBezierPath(roundedRect: NSRect(x: 212, y: y, width: w, height: 16), xRadius: 8, yRadius: 8).fill()
-    }
+    // Copy / paste squares.
+    let back = NSBezierPath(roundedRect: NSRect(x: 166, y: 166, width: 124, height: 124), xRadius: 20, yRadius: 20)
+    back.lineWidth = 26
+    back.stroke()
+    ink.setFill()
+    NSBezierPath(roundedRect: NSRect(x: 222, y: 222, width: 124, height: 124), xRadius: 20, yRadius: 20).fill()
 
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!

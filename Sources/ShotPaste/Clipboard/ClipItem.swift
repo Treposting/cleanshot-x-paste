@@ -17,7 +17,7 @@ struct ClipItem: Codable, Identifiable, Hashable {
         var color: Color {
             switch self {
             case .text: return .blue
-            case .link: return .purple
+            case .link: return .teal
             case .image: return .orange
             case .file: return .green
             }

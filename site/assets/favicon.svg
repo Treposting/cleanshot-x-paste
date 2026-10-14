@@ -1,16 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ShotPaste">
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="#3D3BF3"/>
-  <g fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M104 184v-40a40 40 0 0 1 40-40h40"/>
-    <path d="M328 104h40a40 40 0 0 1 40 40v40"/>
-    <path d="M408 328v40a40 40 0 0 1-40 40h-40"/>
-    <path d="M184 408h-40a40 40 0 0 1-40-40v-40"/>
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="#FFCF1A"/>
+  <g fill="none" stroke="#1D1D1F" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 196V128a16 16 0 0 1 16-16h68"/>
+    <path d="M400 316v68a16 16 0 0 1-16 16h-68"/>
   </g>
-  <rect x="180" y="180" width="152" height="172" rx="24" fill="#fff"/>
-  <rect x="216" y="158" width="80" height="44" rx="14" fill="#fff" stroke="#3D3BF3" stroke-width="10"/>
-  <g fill="#3D3BF3" opacity="0.5">
-    <rect x="212" y="236" width="88" height="16" rx="8"/>
-    <rect x="212" y="270" width="64" height="16" rx="8"/>
-    <rect x="212" y="304" width="80" height="16" rx="8"/>
-  </g>
+  <rect x="166" y="166" width="124" height="124" rx="20" fill="none" stroke="#1D1D1F" stroke-width="26"/>
+  <rect x="222" y="222" width="124" height="124" rx="20" fill="#1D1D1F"/>
 </svg>

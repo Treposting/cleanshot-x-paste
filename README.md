@@ -9,9 +9,9 @@
 A free, open-source menu-bar app for macOS that takes screenshots and screen recordings, and remembers everything you copy.
 
 [![Build](https://github.com/Treposting/cleanshot-x-paste/actions/workflows/build.yml/badge.svg)](https://github.com/Treposting/cleanshot-x-paste/actions/workflows/build.yml)
-[![Latest release](https://img.shields.io/github/v/release/Treposting/cleanshot-x-paste?label=release&color=3D3BF3)](https://github.com/Treposting/cleanshot-x-paste/releases/latest)
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-1A1846)
-[![MIT license](https://img.shields.io/badge/license-MIT-1A1846)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/Treposting/cleanshot-x-paste?label=release&color=FFCF1A)](https://github.com/Treposting/cleanshot-x-paste/releases/latest)
+![macOS 13+](https://img.shields.io/badge/macOS-13%2B-1D1D1F)
+[![MIT license](https://img.shields.io/badge/license-MIT-1D1D1F)](LICENSE)
 
 [**Download**](https://github.com/Treposting/cleanshot-x-paste/releases/latest) &nbsp;·&nbsp;
 [Website](https://treposting.github.io/cleanshot-x-paste/) &nbsp;·&nbsp;
@@ -221,6 +221,7 @@ Another app may already own that key combination. Pick a different one in **Sett
 - [x] Screen recording with GIF export
 - [x] Customizable shortcuts
 - [x] Universal DMG and GitHub Releases
+- [ ] Measure: an on-screen ruler that snaps to the edges of UI elements and shows distances in points, like [PixelSnap](https://pixelsnap.com)
 - [ ] Microphone audio and webcam overlay in recordings
 - [ ] Scrolling capture
 - [ ] Rich text (RTF/HTML) in clipboard history
