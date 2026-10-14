@@ -1,10 +1,9 @@
 <div align="center">
 
-<img src="site/assets/logo.svg" width="120" alt="ShotPaste logo">
-
-# ShotPaste
-
-**Capture the screen. Keep the clipboard.**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
+  <img src="docs/assets/banner-light.png" alt="ShotPaste: capture the screen, keep the clipboard" width="100%">
+</picture>
 
 A free, open-source menu-bar app for macOS that takes screenshots and screen recordings, and remembers everything you copy.
 
@@ -24,15 +23,26 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 
 ## Contents
 
+- [What's new in 0.2](#whats-new-in-02)
 - [Features](#features)
 - [Install](#install)
 - [Using ShotPaste](#using-shotpaste)
 - [Privacy](#privacy)
 - [Build from source](#build-from-source)
 - [Troubleshooting](#troubleshooting)
+- [Coming next: Measure](#coming-next-measure)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
+
+## What's new in 0.2
+
+- **Screen recording.** Record an area or the full screen to MP4, then save it as a GIF.
+- **Custom shortcuts.** Change every global shortcut in Settings.
+- **DMG installer.** One universal download for Apple Silicon and Intel.
+- **New look.** A new logo and app icon, and a [website](https://treposting.github.io/cleanshot-x-paste/).
+
+See all [releases](https://github.com/Treposting/cleanshot-x-paste/releases).
 
 ## Features
 
@@ -213,6 +223,15 @@ ShotPaste uses that shortcut for clipboard history by default. Change it in **Se
 
 Another app may already own that key combination. Pick a different one in **Settings → Shortcuts**.
 </details>
+
+## Coming next: Measure
+
+A PixelSnap-style measuring tool:
+- point at anything on screen to see its distance to the surrounding edges;
+- drag around an element to snap to its exact size;
+- add guides to check alignment.
+
+The design and milestones are in [docs/plans/MEASURE.md](docs/plans/MEASURE.md).
 
 ## Roadmap
 
