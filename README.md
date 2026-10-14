@@ -237,14 +237,12 @@ Ideas and requests are welcome in [Issues](https://github.com/Treposting/cleansh
 
 ### Releasing
 
-Bump `CFBundleShortVersionString` in `Resources/Info.plist`, then push a tag:
+1. Go to **Actions → Release → Run workflow**.
+2. Enter a version such as `0.3.0`, or leave it empty to release the version already in `Resources/Info.plist`.
 
-```sh
-git tag v0.2.0
-git push origin v0.2.0
-```
+The workflow updates `Info.plist` if the version changed, builds the universal DMG, creates the `v0.3.0` tag, and publishes a GitHub Release with the DMG and generated release notes.
 
-CI builds the DMG and publishes it as a GitHub Release.
+Pushing a `v*` tag by hand also works.
 
 ## License
 

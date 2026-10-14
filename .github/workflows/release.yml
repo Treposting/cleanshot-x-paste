@@ -1,0 +1,90 @@
+name: Release
+
+# Actions → Release → Run workflow. Builds the universal DMG, creates the
+# vX.Y.Z tag and publishes a GitHub Release with the DMG attached.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, e.g. 0.3.0. Leave empty to use the version in Resources/Info.plist."
+        required: false
+        type: string
+      prerelease:
+        description: "Mark as a pre-release"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          PLIST=Resources/Info.plist
+          CURRENT="$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$PLIST")"
+          VERSION="${INPUT_VERSION#v}"
+          VERSION="${VERSION:-$CURRENT}"
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$VERSION' is not a version like 1.2.3"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Tag v$VERSION already exists. Pick a new version."
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "bump=$([[ "$VERSION" != "$CURRENT" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$VERSION (Info.plist has $CURRENT)"
+
+      - name: Bump version in Info.plist
+        if: steps.version.outputs.bump == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          PLIST=Resources/Info.plist
+          BUILD="$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "$PLIST")"
+          /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set CFBundleVersion $((BUILD + 1))" "$PLIST"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release v$VERSION"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Build universal app and DMG
+        run: ./scripts/make-dmg.sh
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: ShotPaste ${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.ref_name }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: true
+          files: build/*.dmg
+          body: |
+            ### Install
+            1. Download **ShotPaste-${{ steps.version.outputs.version }}.dmg** below and drag ShotPaste into Applications.
+            2. On first launch, right-click the app and choose **Open** (the build isn't notarized yet).
+            3. Allow **Screen & System Audio Recording** when macOS asks.
+
+            Universal build for Apple Silicon and Intel, macOS 13 or later.
