@@ -14,35 +14,50 @@ func render(_ pixels: Int) -> Data {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
+    // Same geometry as site/assets/logo.svg (512×512, y pointing down).
     let s = CGFloat(pixels)
-    let inset = s * 0.1
-    let tile = NSRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
-    let radius = tile.width * 0.225
-    let path = NSBezierPath(roundedRect: tile, xRadius: radius, yRadius: radius)
+    let ctx = NSGraphicsContext.current!.cgContext
+    ctx.translateBy(x: 0, y: s)
+    ctx.scaleBy(x: s / 512, y: -s / 512)
 
-    let shadow = NSShadow()
-    shadow.shadowColor = NSColor.black.withAlphaComponent(0.3)
-    shadow.shadowBlurRadius = s * 0.02
-    shadow.shadowOffset = NSSize(width: 0, height: -s * 0.01)
-    shadow.set()
+    let accent = NSColor(calibratedRed: 0x6C / 255, green: 0x5C / 255, blue: 1, alpha: 1)
 
+    // Background tile with a diagonal gradient.
+    let tile = NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 112, yRadius: 112)
     NSGradient(
-        starting: NSColor(calibratedRed: 0.33, green: 0.45, blue: 1.0, alpha: 1),
-        ending: NSColor(calibratedRed: 0.62, green: 0.27, blue: 0.95, alpha: 1)
-    )!.draw(in: path, angle: -90)
-    NSShadow().set()
+        starting: NSColor(calibratedRed: 0x4C / 255, green: 0x6F / 255, blue: 1, alpha: 1),
+        ending: NSColor(calibratedRed: 0x9D / 255, green: 0x4D / 255, blue: 1, alpha: 1)
+    )!.draw(in: tile, angle: 45) // y is flipped: 45° runs top-left → bottom-right
 
-    let config = NSImage.SymbolConfiguration(pointSize: s * 0.4, weight: .semibold)
-    if let symbol = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)?
-        .withSymbolConfiguration(config) {
-        let size = symbol.size
-        let white = NSImage(size: size, flipped: false) { rect in
-            symbol.draw(in: rect)
-            NSColor.white.set()
-            rect.fill(using: .sourceAtop)
-            return true
-        }
-        white.draw(in: NSRect(x: (s - size.width) / 2, y: (s - size.height) / 2, width: size.width, height: size.height))
+    // Viewfinder corners.
+    let corners = NSBezierPath()
+    corners.lineWidth = 28
+    corners.lineCapStyle = .round
+    corners.lineJoinStyle = .round
+    func corner(start: NSPoint, center: NSPoint, from: CGFloat, to: CGFloat, end: NSPoint) {
+        corners.move(to: start)
+        corners.appendArc(withCenter: center, radius: 40, startAngle: from, endAngle: to)
+        corners.line(to: end)
+    }
+    corner(start: NSPoint(x: 104, y: 184), center: NSPoint(x: 144, y: 144), from: 180, to: 270, end: NSPoint(x: 184, y: 104))
+    corner(start: NSPoint(x: 328, y: 104), center: NSPoint(x: 368, y: 144), from: 270, to: 360, end: NSPoint(x: 408, y: 184))
+    corner(start: NSPoint(x: 408, y: 328), center: NSPoint(x: 368, y: 368), from: 0, to: 90, end: NSPoint(x: 328, y: 408))
+    corner(start: NSPoint(x: 184, y: 408), center: NSPoint(x: 144, y: 368), from: 90, to: 180, end: NSPoint(x: 104, y: 328))
+    NSColor.white.setStroke()
+    corners.stroke()
+
+    // Clipboard.
+    NSColor.white.setFill()
+    NSBezierPath(roundedRect: NSRect(x: 180, y: 180, width: 152, height: 172), xRadius: 24, yRadius: 24).fill()
+    let clip = NSBezierPath(roundedRect: NSRect(x: 216, y: 158, width: 80, height: 44), xRadius: 14, yRadius: 14)
+    clip.fill()
+    clip.lineWidth = 10
+    accent.setStroke()
+    clip.stroke()
+
+    accent.withAlphaComponent(0.55).setFill()
+    for (y, w) in [(236.0, 88.0), (270.0, 64.0), (304.0, 80.0)] {
+        NSBezierPath(roundedRect: NSRect(x: 212, y: y, width: w, height: 16), xRadius: 8, yRadius: 8).fill()
     }
 
     NSGraphicsContext.restoreGraphicsState()
