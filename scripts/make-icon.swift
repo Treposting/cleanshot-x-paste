@@ -20,14 +20,11 @@ func render(_ pixels: Int) -> Data {
     ctx.translateBy(x: 0, y: s)
     ctx.scaleBy(x: s / 512, y: -s / 512)
 
-    let accent = NSColor(calibratedRed: 0x6C / 255, green: 0x5C / 255, blue: 1, alpha: 1)
+    let accent = NSColor(calibratedRed: 0x3D / 255, green: 0x3B / 255, blue: 0xF3 / 255, alpha: 1)
 
-    // Background tile with a diagonal gradient.
-    let tile = NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 112, yRadius: 112)
-    NSGradient(
-        starting: NSColor(calibratedRed: 0x4C / 255, green: 0x6F / 255, blue: 1, alpha: 1),
-        ending: NSColor(calibratedRed: 0x9D / 255, green: 0x4D / 255, blue: 1, alpha: 1)
-    )!.draw(in: tile, angle: 45) // y is flipped: 45° runs top-left → bottom-right
+    // Background tile.
+    accent.setFill()
+    NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 112, yRadius: 112).fill()
 
     // Viewfinder corners.
     let corners = NSBezierPath()
@@ -55,7 +52,7 @@ func render(_ pixels: Int) -> Data {
     accent.setStroke()
     clip.stroke()
 
-    accent.withAlphaComponent(0.55).setFill()
+    accent.withAlphaComponent(0.5).setFill()
     for (y, w) in [(236.0, 88.0), (270.0, 64.0), (304.0, 80.0)] {
         NSBezierPath(roundedRect: NSRect(x: 212, y: y, width: w, height: 16), xRadius: 8, yRadius: 8).fill()
     }
