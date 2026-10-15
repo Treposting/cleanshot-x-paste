@@ -107,10 +107,12 @@ if args.count > 2 {
     try render(1024, fullBleed: true, tile: false).write(to: assets.appendingPathComponent("marks.png"))
     let json = """
     {
-      "fill" : {
-        "solid" : "srgb:1.00000,0.81176,0.10196,1.00000"
-      },
       "fill-specializations" : [
+        {
+          "value" : {
+            "solid" : "srgb:1.00000,0.81176,0.10196,1.00000"
+          }
+        },
         {
           "appearance" : "dark",
           "value" : {
@@ -122,10 +124,12 @@ if args.count > 2 {
         {
           "layers" : [
             {
-              "fill" : {
-                "solid" : "srgb:0.11373,0.11373,0.12157,1.00000"
-              },
               "fill-specializations" : [
+                {
+                  "value" : {
+                    "solid" : "srgb:0.11373,0.11373,0.12157,1.00000"
+                  }
+                },
                 {
                   "appearance" : "dark",
                   "value" : {
