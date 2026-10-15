@@ -30,10 +30,14 @@ jobs:
         run: swift test
       - name: Build universal app and DMG
         run: ./scripts/make-dmg.sh
+      - name: Preview the app icon in light and dark mode
+        run: swift scripts/preview-icon.swift build/Marquee.app build || true
       - uses: actions/upload-artifact@v4
         with:
           name: Marquee-dmg
-          path: build/*.dmg
+          path: |
+            build/*.dmg
+            build/icon-*.png
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2

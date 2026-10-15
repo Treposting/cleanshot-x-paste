@@ -97,15 +97,14 @@ for (name, pixels) in sizes {
 }
 print("Wrote \(outDir.path)")
 
-// Icon Composer file: a yellow background (graphite in dark mode) with the marks on top,
-// graphite in light mode and yellow in dark mode.
+// Icon Composer file: a yellow background with graphite marks; in dark mode a graphite
+// background with yellow marks (the layer's fill recolors the marks per appearance).
 // Schema: https://github.com/dfabulich/unofficial-apple-icon-composer-json-schema
 if args.count > 2 {
     let icon = URL(fileURLWithPath: args[2])
     let assets = icon.appendingPathComponent("Assets")
     try FileManager.default.createDirectory(at: assets, withIntermediateDirectories: true)
     try render(1024, fullBleed: true, tile: false).write(to: assets.appendingPathComponent("marks.png"))
-    try render(1024, dark: true, fullBleed: true, tile: false).write(to: assets.appendingPathComponent("marks-dark.png"))
     let json = """
     {
       "fill" : {
@@ -123,27 +122,20 @@ if args.count > 2 {
         {
           "layers" : [
             {
-              "glass" : false,
-              "hidden-specializations" : [
+              "fill" : {
+                "solid" : "srgb:0.11373,0.11373,0.12157,1.00000"
+              },
+              "fill-specializations" : [
                 {
                   "appearance" : "dark",
-                  "value" : true
+                  "value" : {
+                    "solid" : "srgb:1.00000,0.81176,0.10196,1.00000"
+                  }
                 }
               ],
+              "glass" : false,
               "image-name" : "marks.png",
               "name" : "Marks"
-            },
-            {
-              "glass" : false,
-              "hidden" : true,
-              "hidden-specializations" : [
-                {
-                  "appearance" : "dark",
-                  "value" : false
-                }
-              ],
-              "image-name" : "marks-dark.png",
-              "name" : "Marks Dark"
             }
           ],
           "shadow" : {
