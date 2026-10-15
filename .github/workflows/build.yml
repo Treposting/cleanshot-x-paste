@@ -31,7 +31,13 @@ jobs:
       - name: Build universal app and DMG
         run: ./scripts/make-dmg.sh
       - name: Preview the app icon in light and dark mode
-        run: swift scripts/preview-icon.swift build/Marquee.app build || true
+        run: |
+          ICTOOL="$(xcode-select -p)/../Applications/Icon Composer.app/Contents/Executables/ictool"
+          for rendition in Default Dark; do
+            "$ICTOOL" build/AppIcon.icon --export-image --output-file "build/icon-$rendition.png" \
+              --platform macOS --rendition "$rendition" --width 512 --height 512 --scale 1 || true
+          done
+          swift scripts/preview-icon.swift build/icon-Default.png build/icon-Dark.png || true
       - uses: actions/upload-artifact@v4
         with:
           name: Marquee-dmg
