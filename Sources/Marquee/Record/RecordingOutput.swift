@@ -93,7 +93,8 @@ final class RecordingOutput: NSObject, SCStreamOutput, SCStreamDelegate, @unchec
         case .audio:
             guard sessionStarted, let audioInput, audioInput.isReadyForMoreMediaData else { return }
             audioInput.append(sampleBuffer)
-        @unknown default:
+        default:
+            // .microphone (macOS 15) and future types aren't recorded.
             break
         }
     }

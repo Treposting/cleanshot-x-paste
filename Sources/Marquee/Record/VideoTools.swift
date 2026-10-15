@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 enum VideoTools {
     /// First frame of a video, for the Quick Access thumbnail.
+    @MainActor
     static func thumbnail(for url: URL) async -> NSImage? {
         let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
         generator.appliesPreferredTrackTransform = true
