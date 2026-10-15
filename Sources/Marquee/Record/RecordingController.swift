@@ -57,7 +57,8 @@ final class RecordingController {
 
     // MARK: - Toolbar phase
 
-    private func prepare(screen: NSScreen, rect: CGRect) {
+    /// Shows the recording toolbar for an area chosen elsewhere (e.g. All-in-One).
+    func prepare(screen: NSScreen, rect: CGRect) {
         let isFullScreen = rect == screen.frame
         let sizeLabel = isFullScreen ? "Full screen" : "\(Int(rect.width)) × \(Int(rect.height))"
         let session = RecordingSession(

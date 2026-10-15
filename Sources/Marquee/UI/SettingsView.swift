@@ -13,7 +13,7 @@ struct SettingsView: View {
             ShortcutsSettings().tabItem { Label("Shortcuts", systemImage: "keyboard") }
         }
         .padding(20)
-        .frame(width: 580, height: 540)
+        .frame(minWidth: 520, maxWidth: .infinity, minHeight: 480, maxHeight: .infinity)
     }
 }
 
@@ -73,7 +73,7 @@ private struct CaptureSettings: View {
 }
 
 @MainActor
-private struct LaunchAtLoginToggle: View {
+struct LaunchAtLoginToggle: View {
     @State private var enabled = SMAppService.mainApp.status == .enabled
 
     var body: some View {

@@ -9,8 +9,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = ClipboardStore()
     private lazy var monitor = ClipboardMonitor(store: store)
     private lazy var historyPanel = HistoryPanelController(store: store, monitor: monitor)
-    private var settingsWindow: NSWindow?
-    private var pauseItem: NSMenuItem?
     private var recordingTimer: Timer?
     private var recordingDotVisible = true
 
@@ -27,6 +25,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         recording.onError = { [weak self] error in self?.showRecordingError(error) }
         Updater.shared.onStateChange = { [weak self] in self?.rebuildMenu() }
         Updater.shared.startAutomaticChecks()
+
+        installMainMenu()
+        AppModel.shared.configure(store: store, monitor: monitor) { [weak self] action in self?.perform(action) }
+        AllInOneController.shared.onChoice = { [weak self] choice, screen, rect in
+            self?.handleAllInOne(choice, screen: screen, rect: rect)
+        }
+        if !Preferences.hasCompletedOnboarding {
+            WindowManager.shared.showOnboarding()
+        }
+    }
+
+    /// Opening Marquee again (Finder, Spotlight, Dock) shows its window.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        WindowManager.shared.showMain()
+        return true
     }
 
     // MARK: - Hotkeys
@@ -58,6 +71,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func perform(_ action: ShortcutAction) {
         switch action {
+        case .allInOne: startAllInOne()
+        case .pickColor: ColorPickerController.shared.pick()
         case .captureArea: capture(.area)
         case .captureWindow: capture(.window)
         case .captureFullscreen: capture(.fullscreen)
@@ -82,24 +97,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Marquee")
     }
 
+    /// The menu-bar menu keeps the quick actions; everything else is in the Marquee window.
     private func rebuildMenu() {
         let menu = NSMenu()
-        for action: ShortcutAction in [.captureArea, .captureWindow, .captureFullscreen, .captureTimed, .captureText] {
+        menu.addItem(item("Open Marquee", #selector(openMainWindow)))
+        menu.addItem(.separator())
+        for action: ShortcutAction in [.allInOne, .captureArea, .captureWindow, .captureFullscreen] {
             menu.addItem(actionItem(action))
         }
         menu.addItem(.separator())
         menu.addItem(actionItem(.recordArea))
-        menu.addItem(actionItem(.recordScreen))
-        menu.addItem(.separator())
         menu.addItem(actionItem(.measure))
-        menu.addItem(.separator())
+        menu.addItem(actionItem(.pickColor))
         menu.addItem(actionItem(.clipboardHistory))
-        let pause = item(pauseTitle, #selector(togglePause))
-        pauseItem = pause
-        menu.addItem(pause)
-        menu.addItem(item("Clear Clipboard History…", #selector(clearHistory)))
         menu.addItem(.separator())
-        menu.addItem(item("Open Screenshots Folder", #selector(openFolder)))
         menu.addItem(item("Settings…", #selector(openSettings), key: ","))
         if Updater.shared.isReadyToInstall {
             menu.addItem(item("Restart to Update", #selector(restartToUpdate)))
@@ -131,52 +142,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return item
     }
 
-    private var pauseTitle: String {
-        Preferences.monitorPaused ? "Resume Clipboard History" : "Pause Clipboard History"
-    }
-
     @objc private func menuAction(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String, let action = ShortcutAction(rawValue: raw) else { return }
         perform(action)
     }
 
-    @objc private func togglePause() {
-        Preferences.monitorPaused.toggle()
-        pauseItem?.title = pauseTitle
-        Toast.show(Preferences.monitorPaused ? "Clipboard history paused" : "Clipboard history resumed")
-    }
-
-    @objc private func clearHistory() {
-        let alert = NSAlert()
-        alert.messageText = "Clear clipboard history?"
-        alert.informativeText = "Pinned items are kept."
-        alert.addButton(withTitle: "Clear")
-        alert.addButton(withTitle: "Cancel")
-        NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn {
-            store.clear(keepPinned: true)
-        }
-    }
-
-    @objc private func openFolder() {
-        NSWorkspace.shared.open(Preferences.saveFolder)
+    @objc private func openMainWindow() {
+        WindowManager.shared.showMain()
     }
 
     @objc private func openSettings() {
-        if settingsWindow == nil {
-            let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 620, height: 580),
-                styleMask: [.titled, .closable],
-                backing: .buffered, defer: false
-            )
-            window.title = "Marquee Settings"
-            window.isReleasedWhenClosed = false
-            window.contentViewController = NSHostingController(rootView: SettingsView())
-            window.center()
-            settingsWindow = window
-        }
+        WindowManager.shared.showMain(.settings)
+    }
+
+    @objc private func showAbout() {
         NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.orderFrontStandardAboutPanel(nil)
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
@@ -218,6 +199,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Applies the "after capture" preferences to a new screenshot or recording.
     private func deliver(_ capture: Capture) {
+        CaptureLibrary.shared.add(capture)
         if Preferences.copyAfterCapture { capture.copyToPasteboard() }
         if Preferences.saveAfterCapture { capture.save() }
         if Preferences.showOverlay {
@@ -225,6 +207,91 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else if Preferences.copyAfterCapture {
             Toast.show(capture.isVideo ? "Recording copied" : "Screenshot copied")
         }
+    }
+
+    // MARK: - All-in-One
+
+    private func startAllInOne() {
+        guard !RecordingController.shared.isBusy, !MeasureController.shared.isActive else { return }
+        AllInOneController.shared.start()
+    }
+
+    private func handleAllInOne(_ choice: AllInOneController.Choice, screen: NSScreen, rect: CGRect) {
+        switch choice {
+        case .screenshot:
+            captureService.capture(.region(rect)) { [weak self] url in
+                guard let url else { return }
+                self?.handleCapture(at: url)
+            }
+        case .copyText:
+            captureService.capture(.region(rect)) { [weak self] url in
+                guard let url else { return }
+                self?.recognizeText(at: url)
+            }
+        case .pin:
+            captureService.capture(.region(rect)) { url in
+                guard let url, let image = NSImage(contentsOf: url) else { return }
+                PinnedImageWindow.pin(image)
+            }
+        case .record:
+            RecordingController.shared.prepare(screen: screen, rect: rect)
+        }
+    }
+
+    // MARK: - App menu
+
+    /// A standard app menu. Besides showing while the Marquee window is open, it routes
+    /// ⌘C, ⌘V, ⌘A and ⌘Z to text fields everywhere in the app.
+    private func installMainMenu() {
+        let main = NSMenu()
+
+        let appMenu = NSMenu(title: "Marquee")
+        appMenu.addItem(item("About Marquee", #selector(showAbout)))
+        appMenu.addItem(.separator())
+        appMenu.addItem(item("Settings…", #selector(openSettings), key: ","))
+        appMenu.addItem(item("Check for Updates…", #selector(checkForUpdates)))
+        appMenu.addItem(.separator())
+        appMenu.addItem(NSMenuItem(title: "Hide Marquee", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"))
+        let hideOthers = NSMenuItem(title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        hideOthers.keyEquivalentModifierMask = [.command, .option]
+        appMenu.addItem(hideOthers)
+        appMenu.addItem(NSMenuItem(title: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: ""))
+        appMenu.addItem(.separator())
+        appMenu.addItem(item("Quit Marquee", #selector(quit), key: "q"))
+        main.addItem(submenu(appMenu))
+
+        let fileMenu = NSMenu(title: "File")
+        fileMenu.addItem(item("Open Marquee", #selector(openMainWindow), key: "o"))
+        fileMenu.addItem(NSMenuItem(title: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
+        main.addItem(submenu(fileMenu))
+
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z"))
+        let redo = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(redo)
+        editMenu.addItem(.separator())
+        editMenu.addItem(NSMenuItem(title: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x"))
+        editMenu.addItem(NSMenuItem(title: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c"))
+        editMenu.addItem(NSMenuItem(title: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v"))
+        editMenu.addItem(NSMenuItem(title: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a"))
+        main.addItem(submenu(editMenu))
+
+        let windowMenu = NSMenu(title: "Window")
+        windowMenu.addItem(NSMenuItem(title: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m"))
+        windowMenu.addItem(NSMenuItem(title: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: ""))
+        windowMenu.addItem(.separator())
+        windowMenu.addItem(NSMenuItem(title: "Bring All to Front", action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: ""))
+        main.addItem(submenu(windowMenu))
+        NSApp.windowsMenu = windowMenu
+
+        NSApp.mainMenu = main
+    }
+
+    private func submenu(_ menu: NSMenu) -> NSMenuItem {
+        let item = NSMenuItem(title: menu.title, action: nil, keyEquivalent: "")
+        item.submenu = menu
+        return item
     }
 
     // MARK: - Recording flow

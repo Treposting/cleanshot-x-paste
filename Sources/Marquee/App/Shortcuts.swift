@@ -70,6 +70,7 @@ struct KeyCombo: Equatable {
 }
 
 enum ShortcutAction: String, CaseIterable, Identifiable {
+    case allInOne
     case captureArea
     case captureWindow
     case captureFullscreen
@@ -78,12 +79,14 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case recordArea
     case recordScreen
     case measure
+    case pickColor
     case clipboardHistory
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .allInOne: return "All-in-One"
         case .captureArea: return "Capture Area"
         case .captureWindow: return "Capture Window"
         case .captureFullscreen: return "Capture Full Screen"
@@ -92,6 +95,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .recordArea: return "Record Area"
         case .recordScreen: return "Record Screen"
         case .measure: return "Measure"
+        case .pickColor: return "Pick Color"
         case .clipboardHistory: return "Clipboard History"
         }
     }
@@ -99,6 +103,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     var defaultCombo: KeyCombo? {
         let optShiftCmd = cmdKey | shiftKey | optionKey
         switch self {
+        case .allInOne: return KeyCombo(keyCode: kVK_ANSI_A, modifiers: optShiftCmd)
         case .captureArea: return KeyCombo(keyCode: kVK_ANSI_4, modifiers: optShiftCmd)
         case .captureWindow: return KeyCombo(keyCode: kVK_ANSI_5, modifiers: optShiftCmd)
         case .captureFullscreen: return KeyCombo(keyCode: kVK_ANSI_3, modifiers: optShiftCmd)
@@ -107,6 +112,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .recordArea: return KeyCombo(keyCode: kVK_ANSI_6, modifiers: optShiftCmd)
         case .recordScreen: return KeyCombo(keyCode: kVK_ANSI_7, modifiers: optShiftCmd)
         case .measure: return KeyCombo(keyCode: kVK_ANSI_M, modifiers: optShiftCmd)
+        case .pickColor: return KeyCombo(keyCode: kVK_ANSI_C, modifiers: optShiftCmd)
         case .clipboardHistory: return KeyCombo(keyCode: kVK_ANSI_V, modifiers: cmdKey | shiftKey)
         }
     }

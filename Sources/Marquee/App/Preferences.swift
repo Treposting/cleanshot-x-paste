@@ -21,6 +21,8 @@ enum Preferences {
         case recordCountdownSeconds
         case measureTolerance
         case autoCheckUpdates
+        case hasCompletedOnboarding
+        case keepLibrary
         case skippedVersion
     }
 
@@ -62,6 +64,8 @@ enum Preferences {
             Key.recordCountdownSeconds.rawValue: 3,
             Key.measureTolerance.rawValue: 12,
             Key.autoCheckUpdates.rawValue: true,
+            Key.hasCompletedOnboarding.rawValue: false,
+            Key.keepLibrary.rawValue: true,
         ])
     }
 
@@ -100,6 +104,13 @@ enum Preferences {
 
     static var measureTolerance: Int { min(max(0, defaults.integer(forKey: Key.measureTolerance.rawValue)), 64) }
     static var autoCheckUpdates: Bool { defaults.bool(forKey: Key.autoCheckUpdates.rawValue) }
+    /// Keep a copy of every screenshot and recording in the Library.
+    static var keepLibrary: Bool { defaults.bool(forKey: Key.keepLibrary.rawValue) }
+
+    static var hasCompletedOnboarding: Bool {
+        get { defaults.bool(forKey: Key.hasCompletedOnboarding.rawValue) }
+        set { defaults.set(newValue, forKey: Key.hasCompletedOnboarding.rawValue) }
+    }
 
     static var skippedVersion: String? {
         get { defaults.string(forKey: Key.skippedVersion.rawValue) }

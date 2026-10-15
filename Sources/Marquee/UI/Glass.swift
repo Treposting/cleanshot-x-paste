@@ -24,6 +24,22 @@ extension View {
         }
     }
 
+    /// Dark floating HUD (capture and recording toolbars): dark-tinted Liquid Glass on
+    /// macOS 26+, a dark material panel before that. Readable over any screen content.
+    @ViewBuilder
+    func hudSurface(cornerRadius: CGFloat = 18) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if #available(macOS 26.0, *) {
+            self.glassEffect(.regular.tint(Color.black.opacity(0.4)), in: shape)
+        } else {
+            self
+                .background(shape.fill(.ultraThinMaterial))
+                .background(shape.fill(Color.black.opacity(0.55)))
+                .overlay(shape.strokeBorder(Color.white.opacity(0.12)))
+                .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+        }
+    }
+
     /// Glass buttons on macOS 26+, bordered buttons before that.
     @ViewBuilder
     func glassButtonStyle(prominent: Bool = false) -> some View {

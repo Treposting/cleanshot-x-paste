@@ -198,6 +198,11 @@ final class MeasureView: NSView {
         liveItems = []
     }
 
+    /// Edit → Copy (⌘C) while measuring.
+    @objc func copy(_ sender: Any?) {
+        copyLast()
+    }
+
     private func copyLast() {
         guard let lastText else { return }
         let pb = NSPasteboard.general

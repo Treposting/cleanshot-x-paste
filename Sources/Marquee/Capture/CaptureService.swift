@@ -1,7 +1,9 @@
 import AppKit
 
-enum CaptureMode {
+enum CaptureMode: Equatable {
     case area
+    /// A rectangle already chosen (All-in-One), in AppKit global coordinates.
+    case region(CGRect)
     case window
     case fullscreen
     case timedFullscreen
@@ -35,6 +37,11 @@ final class CaptureService {
             if !Preferences.windowShadow { args.append("-o") }
         case .fullscreen:
             args += ["-D", String(displayIndexUnderMouse())]
+        case .region(let rect):
+            // screencapture -R wants x,y,w,h in points from the top-left of the main display.
+            let top = NSScreen.screens.first?.frame.maxY ?? rect.maxY
+            let r = rect.integral
+            args += ["-R", "\(Int(r.minX)),\(Int(top - r.maxY)),\(Int(r.width)),\(Int(r.height))"]
         case .timedFullscreen:
             args += ["-D", String(displayIndexUnderMouse()), "-T", "5"]
         }

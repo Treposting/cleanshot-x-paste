@@ -10,15 +10,23 @@ final class AreaSelector {
     private let screen: NSScreen
     private let completion: @MainActor ((NSScreen, CGRect)?) -> Void
 
-    static func select(completion: @escaping @MainActor ((NSScreen, CGRect)?) -> Void) {
+    static let recordHint = "Drag to select an area to record  ·  Return: whole screen  ·  Esc: cancel"
+
+    static func select(
+        hint: String = recordHint,
+        completion: @escaping @MainActor ((NSScreen, CGRect)?) -> Void
+    ) {
         guard active == nil, let screen = NSScreen.underMouse else { return }
-        let selector = AreaSelector(screen: screen, completion: completion)
+        let selector = AreaSelector(screen: screen, hint: hint, completion: completion)
         active = selector
         selector.show()
     }
 
-    private init(screen: NSScreen, completion: @escaping @MainActor ((NSScreen, CGRect)?) -> Void) {
+    private let hint: String
+
+    private init(screen: NSScreen, hint: String, completion: @escaping @MainActor ((NSScreen, CGRect)?) -> Void) {
         self.screen = screen
+        self.hint = hint
         self.completion = completion
         window = SelectionWindow(
             contentRect: screen.frame,
@@ -37,6 +45,7 @@ final class AreaSelector {
         window.setFrame(screen.frame, display: false)
 
         let view = SelectionView(frame: NSRect(origin: .zero, size: screen.frame.size))
+        view.hint = hint
         view.onFinish = { [weak self] localRect in self?.finish(localRect) }
         window.contentView = view
 
@@ -65,6 +74,7 @@ private final class SelectionWindow: NSWindow {
 
 private final class SelectionView: NSView {
     var onFinish: ((NSRect?) -> Void)?
+    var hint = AreaSelector.recordHint
     private var start: NSPoint?
     private var current: NSPoint?
 
@@ -100,7 +110,6 @@ private final class SelectionView: NSView {
             let label = "\(Int(selection.width)) × \(Int(selection.height))"
             drawPill(label, at: NSPoint(x: selection.minX, y: selection.minY - 26))
         } else {
-            let hint = "Drag to select an area to record  ·  Return: whole screen  ·  Esc: cancel"
             let size = (hint as NSString).size(withAttributes: Self.attributes)
             drawPill(hint, at: NSPoint(x: bounds.midX - size.width / 2, y: bounds.midY))
         }
