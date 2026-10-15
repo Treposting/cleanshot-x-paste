@@ -4,6 +4,11 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.5 — 2026-10-15
+
+### Changed
+- Releases are signed with the project's stable certificate. Grant permissions once more after installing this version; after that they stay across updates.
+
 ## 0.5.4 — 2026-10-15
 
 ### Fixed
