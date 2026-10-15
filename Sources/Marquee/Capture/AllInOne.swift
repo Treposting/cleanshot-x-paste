@@ -8,11 +8,18 @@ import SwiftUI
 final class AllInOneController {
     static let shared = AllInOneController()
 
-    enum Choice {
-        case screenshot, record, copyText, pin, pickColor, settings
+    /// What a screenshot or recording covers. `.area` is the current selection, or the whole
+    /// screen when nothing is selected.
+    enum Target: Equatable {
+        case area, fullScreen, window
     }
 
-    /// Set by the app delegate: runs the chosen action on the selected area.
+    enum Choice: Equatable {
+        case screenshot(Target), record(Target), copy, copyText, pin, pickColor, settings
+    }
+
+    /// Set by the app delegate: runs the chosen action on the selected area. For a
+    /// `.window` target the rectangle is unused: the app delegate lets the user pick a window.
     var onChoice: ((Choice, NSScreen, CGRect) -> Void)?
 
     private var overlay: NSWindow?
@@ -124,7 +131,10 @@ final class AllInOneController {
     }
 
     private func choose(_ choice: Choice) {
-        guard let screen, let rect = targetRect else { return }
+        guard let screen, var rect = targetRect else { return }
+        if choice == .screenshot(.fullScreen) || choice == .record(.fullScreen) {
+            rect = screen.frame
+        }
         dismiss()
         if choice == .settings {
             onChoice?(choice, screen, rect)
@@ -275,7 +285,7 @@ private final class AllInOneOverlayView: NSView {
         dim.fill()
 
         guard let selection else {
-            let hint = "Drag to select an area, or choose an action below for the whole screen"
+            let hint = "Drag to select an area  ·  F: full screen  ·  W: window  ·  ⌘C: copy  ·  Esc: cancel"
             let size = (hint as NSString).size(withAttributes: Self.attributes)
             drawPill(hint, at: NSPoint(x: bounds.midX - size.width / 2 - 8, y: bounds.midY))
             return
@@ -369,7 +379,7 @@ private final class AllInOneOverlayView: NSView {
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
         case 53: onCancel?()                                   // Esc
-        case 36, 76: onChoice?(.screenshot)                     // Return, Enter
+        case 36, 76: onChoice?(.screenshot(.area))              // Return, Enter
         case 51, 117:                                           // Delete: back to the whole screen
             selection = nil
         case 123, 124, 125, 126:                                // Arrows nudge the selection
@@ -379,8 +389,18 @@ private final class AllInOneOverlayView: NSView {
             let dy: CGFloat = event.keyCode == 125 ? -step : event.keyCode == 126 ? step : 0
             self.selection = clamped(selection.offsetBy(dx: dx, dy: dy))
         default:
-            switch event.charactersIgnoringModifiers?.lowercased() {
-            case "r": onChoice?(.record)
+            let key = event.charactersIgnoringModifiers?.lowercased()
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            // ⌘C or ⌃C copies the selected area (or the whole screen) to the clipboard.
+            if key == "c", flags.contains(.command) || flags.contains(.control) {
+                onChoice?(.copy)
+                return
+            }
+            let shift = flags.contains(.shift)
+            switch key {
+            case "f": onChoice?(shift ? .record(.fullScreen) : .screenshot(.fullScreen))
+            case "w": onChoice?(shift ? .record(.window) : .screenshot(.window))
+            case "r": onChoice?(.record(.area))
             case "t": onChoice?(.copyText)
             case "p": onChoice?(.pin)
             case "c": onChoice?(.pickColor)
@@ -404,8 +424,19 @@ private struct AllInOneToolbar: View {
     var body: some View {
         GlassGroup(spacing: 10) {
             HStack(spacing: 4) {
-                ToolbarAction(symbol: "camera.viewfinder", title: "Screenshot", key: "↩", prominent: true) { choose(.screenshot) }
-                ToolbarAction(symbol: "record.circle", title: "Record", key: "R", symbolColor: .red) { choose(.record) }
+                SplitAction(
+                    main: ToolbarAction(symbol: "camera.viewfinder", title: "Screenshot", key: "↩", prominent: true) { choose(.screenshot(.area)) },
+                    areaTitle: state.hasSelection ? "Selected Area" : "Whole Screen",
+                    keys: ("↩", "F", "W"),
+                    pick: { choose(.screenshot($0)) }
+                )
+                SplitAction(
+                    main: ToolbarAction(symbol: "record.circle", title: "Record", key: "R", symbolColor: .red) { choose(.record(.area)) },
+                    areaTitle: state.hasSelection ? "Selected Area" : "Whole Screen",
+                    keys: ("R", "⇧F", "⇧W"),
+                    pick: { choose(.record($0)) }
+                )
+                ToolbarAction(symbol: "doc.on.doc", title: "Copy", key: "⌘C") { choose(.copy) }
                 ToolbarAction(symbol: "text.viewfinder", title: "Copy Text", key: "T") { choose(.copyText) }
                 ToolbarAction(symbol: "pin", title: "Pin", key: "P") { choose(.pin) }
                 ToolbarAction(symbol: "eyedropper", title: "Color", key: "C") { choose(.pickColor) }
@@ -434,6 +465,35 @@ private struct AllInOneToolbar: View {
         }
         .padding(14) // room for the glass edge and shadow
         .fixedSize()
+    }
+}
+
+/// A toolbar action with a ▾ menu for choosing what it covers.
+private struct SplitAction: View {
+    let main: ToolbarAction
+    let areaTitle: String
+    let keys: (area: String, fullScreen: String, window: String)
+    let pick: (AllInOneController.Target) -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            main
+            Menu {
+                Button { pick(.area) } label: { Label("\(areaTitle)  (\(keys.area))", systemImage: "rectangle.dashed") }
+                Button { pick(.fullScreen) } label: { Label("Full Screen  (\(keys.fullScreen))", systemImage: "display") }
+                Button { pick(.window) } label: { Label("Window…  (\(keys.window))", systemImage: "macwindow") }
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .frame(width: 22, height: 38)
+            .contentShape(Rectangle())
+            .help("Selected area, full screen or a window")
+            .accessibilityLabel("\(main.title) options")
+        }
     }
 }
 

@@ -218,10 +218,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleAllInOne(_ choice: AllInOneController.Choice, screen: NSScreen, rect: CGRect) {
         switch choice {
+        case .screenshot(.window):
+            // The native window picker: click a window, Esc cancels.
+            captureService.capture(.window) { [weak self] url in
+                guard let url else { return }
+                self?.handleCapture(at: url)
+            }
         case .screenshot:
             captureService.capture(.region(rect)) { [weak self] url in
                 guard let url else { return }
                 self?.handleCapture(at: url)
+            }
+        case .copy:
+            captureService.capture(.region(rect)) { url in
+                guard let url, let image = NSImage(contentsOf: url) else { return }
+                let capture = Capture(url: url, image: image)
+                capture.copyToPasteboard()
+                CaptureLibrary.shared.add(capture)
+                Toast.show("Copied to clipboard")
             }
         case .copyText:
             captureService.capture(.region(rect)) { [weak self] url in
@@ -232,6 +246,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             captureService.capture(.region(rect)) { url in
                 guard let url, let image = NSImage(contentsOf: url) else { return }
                 PinnedImageWindow.pin(image)
+            }
+        case .record(.window):
+            WindowPicker.pick { selection in
+                guard let selection else { return }
+                RecordingController.shared.prepare(screen: selection.0, rect: selection.1)
             }
         case .record:
             RecordingController.shared.prepare(screen: screen, rect: rect)

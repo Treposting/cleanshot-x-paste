@@ -75,12 +75,20 @@ The first time you open Marquee, a short walkthrough sets up permissions and sho
 
 ### All-in-One
 
-Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar appears right away: **Screenshot** (↩), **Record** (R), **Copy Text** (T), **Pin** (P), **Color** (C) to pick a color, and a gear (,) that opens Settings. Until you select an area, captures use the whole screen.
+Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar appears right away. Until you select an area, actions use the whole screen.
 
-- **Drag** to select an area. The toolbar moves under it.
-- **Drag somewhere else** to replace the selection, **drag inside it** to move it, or **drag a handle** to resize it.
-- **Arrow keys** nudge it by a point (hold ⇧ for 10), and <kbd>⌫</kbd> goes back to the whole screen.
-- <kbd>Esc</kbd> or the shortcut again cancels.
+- **Screenshot ▾** and **Record ▾**: the button uses the selected area; the ▾ menu offers **Selected Area**, **Full Screen** or **Window…**.
+- **Copy** (<kbd>⌘</kbd><kbd>C</kbd> or <kbd>⌃</kbd><kbd>C</kbd>) puts the area straight on the clipboard.
+- **Copy Text** (T), **Pin** (P), **Color** (C), and a gear (,) for Settings.
+- **Drag** to select; drag elsewhere for a new selection, inside it to move it, or a handle to resize it. Arrow keys nudge it (⇧ for 10), <kbd>⌫</kbd> goes back to the whole screen, <kbd>Esc</kbd> cancels.
+
+| Key | Action |
+|---|---|
+| <kbd>↩</kbd> | Screenshot the selected area |
+| <kbd>F</kbd> / <kbd>W</kbd> | Screenshot the full screen / a window |
+| <kbd>R</kbd> | Record the selected area |
+| <kbd>⇧</kbd><kbd>F</kbd> / <kbd>⇧</kbd><kbd>W</kbd> | Record the full screen / a window |
+| <kbd>⌘</kbd><kbd>C</kbd> | Copy the area to the clipboard |
 
 ### Capture
 

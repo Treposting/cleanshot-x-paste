@@ -4,6 +4,11 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Added
+- **All-in-One**: Screenshot and Record have a ▾ menu for Selected Area, Full Screen or Window. Keys: F / W for a full-screen or window screenshot, ⇧F / ⇧W to record them.
+- **Copy the area** with ⌘C (or ⌃C) in All-in-One, or the new Copy button.
+- **Record a window**: hover to highlight a window, click to record it.
+
 ## 0.5.5 — 2026-10-15
 
 ### Changed
