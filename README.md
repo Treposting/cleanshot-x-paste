@@ -175,7 +175,7 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 
 ## Privacy
 
-- **No account and no network requests.** Captures and history never leave your Mac.
+- **No account and no uploads.** Captures and history never leave your Mac. The only network request is the daily update check to GitHub, which you can turn off in Settings.
 - **Clipboard history** is stored in `~/Library/Application Support/Marquee/`. Clear it from the menu bar at any time; pinned items are kept.
 - **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`. Marquee never records those items.
 - **Pause history** from the menu bar when you're copying something sensitive.
@@ -283,7 +283,8 @@ Turn off automatic checks in **Settings → Capture → Updates**. Updates only 
 - [x] Measure: distances, snap to element, keep, copy, capture
 - [x] In-app updates from GitHub Releases
 - [ ] Measure guides with arrow-key nudging, and multiple displays at once
-- [ ] Microphone audio and webcam overlay in recordings
+- [x] Microphone and desktop audio in recordings
+- [ ] Webcam overlay in recordings
 - [ ] Scrolling capture
 - [ ] Rich text (RTF/HTML) in clipboard history
 - [ ] Exclude specific apps from history
