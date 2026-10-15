@@ -7,15 +7,15 @@
 
 A free, open-source menu-bar app for macOS that takes screenshots and screen recordings, and remembers everything you copy.
 
-[![Build](https://github.com/Treposting/cleanshot-x-paste/actions/workflows/build.yml/badge.svg)](https://github.com/Treposting/cleanshot-x-paste/actions/workflows/build.yml)
-[![Latest release](https://img.shields.io/github/v/release/Treposting/cleanshot-x-paste?label=release&color=FFCF1A)](https://github.com/Treposting/cleanshot-x-paste/releases/latest)
+[![Build](https://github.com/Treposting/marquee/actions/workflows/build.yml/badge.svg)](https://github.com/Treposting/marquee/actions/workflows/build.yml)
+[![Latest release](https://img.shields.io/github/v/release/Treposting/marquee?label=release&color=FFCF1A)](https://github.com/Treposting/marquee/releases/latest)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-1D1D1F)
 [![MIT license](https://img.shields.io/badge/license-MIT-1D1D1F)](LICENSE)
 
-[**Download**](https://github.com/Treposting/cleanshot-x-paste/releases/latest) &nbsp;·&nbsp;
-[Website](https://treposting.github.io/cleanshot-x-paste/) &nbsp;·&nbsp;
+[**Download**](https://github.com/Treposting/marquee/releases/latest) &nbsp;·&nbsp;
+[Website](https://treposting.github.io/marquee/) &nbsp;·&nbsp;
 [How it works](docs/HOW-IT-WORKS.md) &nbsp;·&nbsp;
-[Report a bug](https://github.com/Treposting/cleanshot-x-paste/issues)
+[Report a bug](https://github.com/Treposting/marquee/issues)
 
 </div>
 
@@ -42,9 +42,9 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 - **Screen recording.** Record an area or the full screen to MP4, then save it as a GIF.
 - **Custom shortcuts.** Change every global shortcut in Settings.
 - **DMG installer.** One universal download for Apple Silicon and Intel.
-- **New look.** A new logo and app icon, and a [website](https://treposting.github.io/cleanshot-x-paste/).
+- **New look.** A new logo and app icon, and a [website](https://treposting.github.io/marquee/).
 
-See all [releases](https://github.com/Treposting/cleanshot-x-paste/releases).
+See all [releases](https://github.com/Treposting/marquee/releases).
 
 ## Features
 
@@ -74,7 +74,7 @@ See all [releases](https://github.com/Treposting/cleanshot-x-paste/releases).
 
 ## Install
 
-1. Download `Marquee-x.y.z.dmg` from the [latest release](https://github.com/Treposting/cleanshot-x-paste/releases/latest).
+1. Download `Marquee-x.y.z.dmg` from the [latest release](https://github.com/Treposting/marquee/releases/latest).
 2. Open the DMG and drag **Marquee** into **Applications**.
 3. Releases aren't notarized by Apple yet, so the first launch needs one of these:
    - right-click the app and choose **Open**, or
@@ -152,8 +152,8 @@ Drag to select. Press <kbd>↩</kbd> to record the whole screen instead, or <kbd
 You need macOS 13+ and Xcode 15+ (or the Swift 5.9 command-line tools).
 
 ```sh
-git clone https://github.com/Treposting/cleanshot-x-paste.git
-cd cleanshot-x-paste
+git clone https://github.com/Treposting/marquee.git
+cd marquee
 make run
 ```
 
@@ -249,7 +249,7 @@ The design and milestones are in [docs/plans/MEASURE.md](docs/plans/MEASURE.md).
 - [ ] Exclude specific apps from history
 - [ ] Notarized releases
 
-Ideas and requests are welcome in [Issues](https://github.com/Treposting/cleanshot-x-paste/issues).
+Ideas and requests are welcome in [Issues](https://github.com/Treposting/marquee/issues).
 
 ## Contributing
 
