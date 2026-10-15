@@ -13,7 +13,7 @@ try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories:
 
 /// `fullBleed` draws the tile edge to edge with square corners: macOS 26 masks Icon Composer
 /// artwork itself.
-func render(_ pixels: Int, dark: Bool = false, fullBleed: Bool = false) -> Data {
+func render(_ pixels: Int, dark: Bool = false, fullBleed: Bool = false, tile: Bool = true) -> Data {
     let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -40,7 +40,10 @@ func render(_ pixels: Int, dark: Bool = false, fullBleed: Bool = false) -> Data 
         ? NSBezierPath(rect: NSRect(x: 16, y: 16, width: 480, height: 480))
         : NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 116, yRadius: 116)
     let mark: NSColor
-    if dark {
+    if !tile {
+        // Marks only, for an Icon Composer layer over its own background fill.
+        mark = dark ? yellow : ink
+    } else if dark {
         // Graphite tile, lit slightly from the top, with yellow marks.
         let top = NSColor(calibratedRed: 0x34 / 255, green: 0x34 / 255, blue: 0x37 / 255, alpha: 1)
         let bottom = NSColor(calibratedRed: 0x1A / 255, green: 0x1A / 255, blue: 0x1C / 255, alpha: 1)
@@ -94,33 +97,60 @@ for (name, pixels) in sizes {
 }
 print("Wrote \(outDir.path)")
 
-// Icon Composer file with light and dark artwork.
+// Icon Composer file: a yellow background (graphite in dark mode) with the marks on top,
+// graphite in light mode and yellow in dark mode.
+// Schema: https://github.com/dfabulich/unofficial-apple-icon-composer-json-schema
 if args.count > 2 {
     let icon = URL(fileURLWithPath: args[2])
     let assets = icon.appendingPathComponent("Assets")
     try FileManager.default.createDirectory(at: assets, withIntermediateDirectories: true)
-    try render(1024, fullBleed: true).write(to: assets.appendingPathComponent("light.png"))
-    try render(1024, dark: true, fullBleed: true).write(to: assets.appendingPathComponent("dark.png"))
+    try render(1024, fullBleed: true, tile: false).write(to: assets.appendingPathComponent("marks.png"))
+    try render(1024, dark: true, fullBleed: true, tile: false).write(to: assets.appendingPathComponent("marks-dark.png"))
     let json = """
     {
       "fill" : {
         "solid" : "srgb:1.00000,0.81176,0.10196,1.00000"
       },
+      "fill-specializations" : [
+        {
+          "appearance" : "dark",
+          "value" : {
+            "solid" : "srgb:0.16471,0.16471,0.17647,1.00000"
+          }
+        }
+      ],
       "groups" : [
         {
           "layers" : [
             {
               "glass" : false,
-              "image-name" : "light.png",
-              "image-name-specializations" : [
+              "hidden-specializations" : [
                 {
                   "appearance" : "dark",
-                  "value" : "dark.png"
+                  "value" : true
                 }
               ],
-              "name" : "Artwork"
+              "image-name" : "marks.png",
+              "name" : "Marks"
+            },
+            {
+              "glass" : false,
+              "hidden" : true,
+              "hidden-specializations" : [
+                {
+                  "appearance" : "dark",
+                  "value" : false
+                }
+              ],
+              "image-name" : "marks-dark.png",
+              "name" : "Marks Dark"
             }
-          ]
+          ],
+          "shadow" : {
+            "kind" : "neutral",
+            "opacity" : 0.3
+          },
+          "specular" : true
         }
       ],
       "supported-platforms" : {
