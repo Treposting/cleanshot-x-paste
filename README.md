@@ -36,6 +36,12 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 
 ## What's new
 
+**0.5.6**
+- **All-in-One, everything in one bar.** Screenshot ▾ and Record ▾ each offer Selected Area, Full Screen or Window. Copy the area with <kbd>⌘</kbd><kbd>C</kbd>, and use F / W (⇧F / ⇧W to record) as quick keys.
+- **Record a window.** Hover to highlight it, click to record.
+- **Permissions stay after updates.** Releases are signed with one stable certificate (from 0.5.5), and the Permissions page can repair stale entries.
+- **Dark-mode app icon**, a Liquid Glass All-in-One toolbar, and shortcuts grouped by category.
+
 **0.5**
 - **The Marquee window.** Every action, your capture library, clipboard history, picked colors, permissions and settings, in one app. The menu bar keeps the shortcuts you use most.
 - **Onboarding.** A short walkthrough on first launch sets up permissions and shows the key shortcuts.
@@ -253,7 +259,8 @@ Another app may already own that key combination. Pick a different one in **Sett
 
 Marquee updates itself (from version 0.4):
 - **Checks:** once a day it asks GitHub whether a newer release exists. You can also choose **Check for Updates…** in the menu bar or Settings.
-- **Installs:** when one is available, you see the release notes. **Install Update** downloads it and checks that it's a genuine, correctly signed Marquee build. Then **Restart to Update** swaps it in and reopens the app.
+- **Installs:** when one is available, you see the release notes. **Install Update** downloads it and checks that it's a genuine Marquee build signed with the same certificate. Then **Restart to Update** swaps it in and reopens the app.
+- **Keeps permissions:** releases from 0.5.5 on share one signing certificate, so Screen Recording, Microphone and Accessibility stay allowed after an update.
 
 Turn off automatic checks in **Settings → Capture → Updates**. Updates only ever come from [this repository's releases](https://github.com/Treposting/marquee/releases).
 
