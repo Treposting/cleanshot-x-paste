@@ -4,6 +4,16 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Added
+- **Marquee window** with a sidebar: Home (every action as a button, recent captures), Library (all screenshots and recordings), Clipboard (searchable history grid), Colors, Permissions and Settings. Marquee shows in the Dock while it's open.
+- **Onboarding** on first launch: welcome, permissions, key shortcuts and launch at login.
+- **All-in-One** (⌥⇧⌘A): select an area, then Screenshot, Record, Copy Text or Pin from one toolbar.
+- **Color picker** (⌥⇧⌘C): copy any on-screen color as HEX, RGB, HSL or SwiftUI, with a history of 48 colors.
+- Main menu with standard Edit commands, so ⌘C/⌘V work in text fields.
+
+### Changed
+- The menu bar menu is shorter: Open Marquee, the main actions, Settings, updates and Quit. Pause and clear history moved to the Clipboard page.
+
 ## 0.4.1 — 2026-10-15
 
 ### Added

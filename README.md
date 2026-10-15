@@ -5,7 +5,7 @@
   <img src="docs/assets/banner-light.png" alt="Marquee: capture the screen, keep the clipboard" width="100%">
 </picture>
 
-A free, open-source menu-bar app for macOS that takes screenshots and screen recordings, and remembers everything you copy.
+A free, open-source menu-bar app for macOS that takes screenshots and screen recordings, measures and picks colors, and remembers everything you copy.
 
 [![Build](https://github.com/Treposting/marquee/actions/workflows/build.yml/badge.svg)](https://github.com/Treposting/marquee/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/Treposting/marquee?label=release&color=FFCF1A)](https://github.com/Treposting/marquee/releases/latest)
@@ -36,6 +36,12 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 
 ## What's new
 
+**0.5**
+- **The Marquee window.** Every action, your capture library, clipboard history, picked colors, permissions and settings, in one app. The menu bar keeps the shortcuts you use most.
+- **Onboarding.** A short walkthrough on first launch sets up permissions and shows the key shortcuts.
+- **All-in-One** (⌥⇧⌘A). Select an area, then screenshot, record, copy text or pin from one toolbar.
+- **Color picker** (⌥⇧⌘C). Copy any on-screen color as HEX, RGB, HSL or SwiftUI.
+
 **0.4**
 - **Measure.** A PixelSnap-style ruler: distances, snap to element, keep, copy, capture.
 - **Microphone and desktop audio** in recordings, chosen on a new recording toolbar with a live level meter.
@@ -53,6 +59,22 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 See all [releases](https://github.com/Treposting/marquee/releases).
 
 ## Features
+
+### The Marquee window
+
+Open it from the menu bar or the Dock. The sidebar has:
+- **Home:** one button for every action, plus your latest captures.
+- **Library:** every screenshot and recording you've taken. Open, copy, annotate, reveal or save any of them.
+- **Clipboard:** your whole history as a searchable grid. Double-click an item to copy it.
+- **Colors:** the colors you've picked, in any format.
+- **Permissions:** what Marquee is allowed to do, with a button to fix anything missing.
+- **Settings.**
+
+The first time you open Marquee, a short walkthrough sets up permissions and shows the main shortcuts.
+
+### All-in-One
+
+Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and drag over an area. A toolbar under it offers **Screenshot** (↩), **Record** (R), **Copy Text** (T) and **Pin** (P).
 
 ### Capture
 
@@ -77,6 +99,12 @@ See all [releases](https://github.com/Treposting/marquee/releases).
 - **Snap to element.** Drag a box around a button, an icon or a block of text and it shrinks to the element's exact size.
 - **Keep, copy, capture.** Space keeps a measurement on screen, ⌘C copies `140 × 48`, and ⌘S sends the screen with your measurements to the Quick Access overlay.
 - **Points or pixels.** Sizes are in points; hold ⇧ to see pixels.
+
+### Color picker
+
+- **Any pixel.** Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd>, click anywhere on screen, and the color is copied.
+- **Your format.** HEX (`#FFCF1A`), RGB, HSL or SwiftUI `Color(red:green:blue:)`. Choose it in **Colors**.
+- **History.** The last 48 colors are kept in **Colors**; click a swatch to copy it again.
 
 ### Clipboard history
 
@@ -112,6 +140,7 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 
 | Action | Default |
 |---|---|
+| All-in-One | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> |
 | Capture area | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>4</kbd> |
 | Capture window | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>5</kbd> |
 | Capture full screen | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>3</kbd> |
@@ -120,6 +149,7 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 | Record area (press again to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>6</kbd> |
 | Record screen (press again to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>7</kbd> |
 | Measure (press again or Esc to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>M</kbd> |
+| Pick color | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd> |
 | Clipboard history | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd> |
 
 ### In the clipboard panel
@@ -175,9 +205,10 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 ## Privacy
 
 - **No account and no uploads.** Captures and history never leave your Mac. The only network request is the daily update check to GitHub, which you can turn off in Settings.
-- **Clipboard history** is stored in `~/Library/Application Support/Marquee/`. Clear it from the menu bar at any time; pinned items are kept.
+- **Clipboard history** is stored in `~/Library/Application Support/Marquee/`. Clear it from **Clipboard** in the Marquee window at any time; pinned items are kept.
+- **The Library** keeps a copy of your last 300 captures in `~/Library/Application Support/Marquee/Library`. Clear it from **Library** at any time.
 - **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`. Marquee never records those items.
-- **Pause history** from the menu bar when you're copying something sensitive.
+- **Pause history** from **Clipboard** in the Marquee window when you're copying something sensitive.
 
 ## Troubleshooting
 
@@ -228,6 +259,7 @@ Turn off automatic checks in **Settings → Capture → Updates**. Updates only 
 - [x] Universal DMG and GitHub Releases
 - [x] Measure: distances, snap to element, keep, copy, capture
 - [x] In-app updates from GitHub Releases
+- [x] App window, onboarding, All-in-One and color picker
 - [ ] Measure guides with arrow-key nudging, and multiple displays at once
 - [x] Microphone and desktop audio in recordings
 - [ ] Webcam overlay in recordings
@@ -252,7 +284,10 @@ Marquee has no third-party dependencies; [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORK
 ```
 Sources/Marquee/
 ├── App/         Entry point, menu bar, global shortcuts, preferences
-├── Capture/     Screenshots, Quick Access overlay, pinned windows, OCR
+├── Window/      Marquee window (Home, Library, Clipboard, Colors, Permissions), onboarding
+├── Capture/     Screenshots, All-in-One, Quick Access overlay, pinned windows, OCR
+├── Library/     Saved captures
+├── Color/       Color picker and history
 ├── Record/      Recording toolbar, ScreenCaptureKit recorder, microphone, MP4 writer, GIF export
 ├── Measure/     Screen ruler: snapshot, edge finder, overlay
 ├── Annotate/    Annotation model, renderer and editor window
