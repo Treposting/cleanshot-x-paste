@@ -85,21 +85,27 @@ struct AnnotationEditorView: View {
     private static let swatches: [Color] = [.red, .orange, .yellow, .green, .blue, .purple, .black, .white]
 
     var body: some View {
-        VStack(spacing: 0) {
-            toolbar
-            Divider()
+        // The toolbar floats over the canvas, as macOS 26 controls do.
+        ZStack(alignment: .top) {
             GeometryReader { geo in
                 let size = document.size
-                let scale = min(1, (geo.size.width - 40) / size.width, (geo.size.height - 40) / size.height)
+                let available = CGSize(width: geo.size.width - 48, height: geo.size.height - Self.toolbarClearance - 24)
+                let scale = min(1, available.width / size.width, available.height / size.height)
                 canvas(scale: max(scale, 0.05))
                     .frame(width: size.width * scale, height: size.height * scale)
                     .shadow(color: .black.opacity(0.25), radius: 8, y: 2)
-                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                    .position(x: geo.size.width / 2, y: Self.toolbarClearance + (geo.size.height - Self.toolbarClearance) / 2)
             }
             .background(Color(nsColor: .underPageBackgroundColor))
+
+            toolbar
+                .padding(.top, 10)
+                .padding(.horizontal, 12)
         }
-        .frame(minWidth: 700, minHeight: 420)
+        .frame(minWidth: 760, minHeight: 440)
     }
+
+    private static let toolbarClearance: CGFloat = 64
 
     private var toolbar: some View {
         HStack(spacing: 12) {
@@ -120,6 +126,10 @@ struct AnnotationEditorView: View {
                         .overlay(Circle().stroke(Color.primary.opacity(document.color == color ? 0.9 : 0.2),
                                                  lineWidth: document.color == color ? 2 : 1))
                         .onTapGesture { document.color = color }
+                        .accessibilityElement()
+                        .accessibilityLabel(Text(color.description))
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { document.color = color }
                 }
                 ColorPicker("Color", selection: $document.color).labelsHidden()
             }
@@ -130,21 +140,30 @@ struct AnnotationEditorView: View {
 
             Spacer()
 
-            Button { document.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .keyboardShortcut("z", modifiers: .command)
-                .disabled(!document.canUndo)
-                .help("Undo")
-            Button { document.redo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .keyboardShortcut("z", modifiers: [.command, .shift])
-                .disabled(!document.canRedo)
-                .help("Redo")
-            Button("Copy", action: onCopy).keyboardShortcut("c", modifiers: .command)
-            Button("Save…", action: onSave).keyboardShortcut("s", modifiers: .command)
+            GlassGroup(spacing: 6) {
+                HStack(spacing: 6) {
+                    Button { document.undo() } label: { Image(systemName: "arrow.uturn.backward") }
+                        .keyboardShortcut("z", modifiers: .command)
+                        .disabled(!document.canUndo)
+                        .help("Undo")
+                        .accessibilityLabel("Undo")
+                    Button { document.redo() } label: { Image(systemName: "arrow.uturn.forward") }
+                        .keyboardShortcut("z", modifiers: [.command, .shift])
+                        .disabled(!document.canRedo)
+                        .help("Redo")
+                        .accessibilityLabel("Redo")
+                    Button("Copy", action: onCopy).keyboardShortcut("c", modifiers: .command)
+                    Button("Save…", action: onSave).keyboardShortcut("s", modifiers: .command)
+                }
+                .glassButtonStyle()
+            }
             Button("Done", action: onDone)
                 .keyboardShortcut(.return, modifiers: .command)
-                .buttonStyle(.borderedProminent)
+                .glassButtonStyle(prominent: true)
         }
-        .padding(10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassSurface(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func canvas(scale: CGFloat) -> some View {

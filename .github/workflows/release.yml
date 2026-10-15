@@ -24,11 +24,19 @@ concurrency:
 
 jobs:
   release:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # Building with the macOS 26 SDK turns on Liquid Glass for Marquee's windows and
+      # controls on macOS 26 and 27 (apps built with older SDKs keep the old look).
+      - name: Select Xcode 26
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
 
       - name: Resolve version
         id: version

@@ -24,8 +24,7 @@ struct HistoryView: View {
         .padding(.top, 14)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12)))
+        .glassSurface(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .onAppear { searchFocused = true }
         .onReceive(model.$focusToken) { _ in searchFocused = true }
     }
@@ -64,10 +63,19 @@ struct HistoryView: View {
         return thumbnails.thumbnail(for: url)
     }
 
+    private var emptyMessage: String {
+        if !model.query.isEmpty { return "No matches" }
+        if model.store.items.isEmpty && PasteboardAccess.status != .allowed {
+            return "macOS is limiting Marquee's clipboard access, so copies may not be recorded.\nAllow it in Settings → Clipboard."
+        }
+        return "Copy something and it shows up here"
+    }
+
     private var emptyState: some View {
         VStack(spacing: 6) {
             Image(systemName: "doc.on.clipboard").font(.system(size: 30))
-            Text(model.query.isEmpty ? "Copy something and it shows up here" : "No matches")
+            Text(emptyMessage)
+                .multilineTextAlignment(.center)
         }
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

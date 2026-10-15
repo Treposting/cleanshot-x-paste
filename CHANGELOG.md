@@ -4,6 +4,14 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Added
+- **Liquid Glass** on macOS 26 and 27: Quick Access overlay, recording toolbar and countdown, clipboard history panel, toasts and the annotation editor's floating toolbar. Builds now use the macOS 26 SDK, so standard windows and controls get the new look too. macOS 13–15 keep the previous materials.
+- Settings → Clipboard warns when macOS limits background clipboard access (macOS 15.4+) and explains how to allow it.
+
+### Changed
+- VoiceOver: labels for icon-only buttons and color swatches; toasts are announced.
+- Reduce Motion: no pulsing record dot, and a simple fade for the countdown.
+
 ## 0.4.0 — 2026-10-15
 
 ### Added

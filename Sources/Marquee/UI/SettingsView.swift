@@ -101,9 +101,25 @@ private struct ClipboardSettings: View {
     @AppStorage(Preferences.Key.autoPaste.rawValue) private var autoPaste = true
     @AppStorage(Preferences.Key.monitorPaused.rawValue) private var paused = false
     @State private var trusted = Paster.isTrusted
+    @State private var access = PasteboardAccess.status
 
     var body: some View {
         Form {
+            if access != .allowed {
+                Section("Clipboard access") {
+                    Label {
+                        Text(access == .asks
+                             ? "macOS asks before Marquee reads the clipboard, so copies may not be recorded."
+                             : "macOS may block Marquee from reading the clipboard, so copies may not be recorded.")
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    }
+                    Text("In System Settings → Privacy & Security, find the clipboard (Paste) setting and choose Always Allow for Marquee.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Open Privacy & Security") { PasteboardAccess.openPrivacySettings() }
+                }
+            }
             Section("History") {
                 Toggle("Record clipboard history", isOn: Binding(get: { !paused }, set: { paused = !$0 }))
                 Picker("Keep", selection: $historyLimit) {
@@ -132,7 +148,10 @@ private struct ClipboardSettings: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear { trusted = Paster.isTrusted }
+        .onAppear {
+            trusted = Paster.isTrusted
+            access = PasteboardAccess.status
+        }
     }
 }
 

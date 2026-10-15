@@ -69,7 +69,7 @@ struct RecordingToolbar: View {
         }
         .padding(6)
         .frame(height: 48)
-        .background(ToolbarBackground())
+        .toolbarSurface()
         .environment(\.colorScheme, .dark)
         .fixedSize()
         .animation(.easeOut(duration: 0.18), value: session.phase)
@@ -206,6 +206,19 @@ private struct ToolbarBackground: View {
     }
 }
 
+private extension View {
+    /// Dark-tinted Liquid Glass on macOS 26+ (controls stay legible over any content);
+    /// a dark material panel on older systems.
+    @ViewBuilder
+    func toolbarSurface() -> some View {
+        if #available(macOS 26.0, *) {
+            self.glassEffect(.regular.tint(Color.black.opacity(0.4)), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        } else {
+            self.background(ToolbarBackground())
+        }
+    }
+}
+
 private struct ToolbarDivider: View {
     var body: some View {
         Rectangle().fill(Color.white.opacity(0.14)).frame(width: 1, height: 22).padding(.horizontal, 2)
@@ -228,6 +241,7 @@ private struct IconButton: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .help(help)
+        .accessibilityLabel(help)
     }
 }
 
@@ -294,6 +308,7 @@ private struct LevelMeter: View {
 }
 
 private struct RecordingDot: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dim = false
 
     var body: some View {
@@ -301,7 +316,9 @@ private struct RecordingDot: View {
             .fill(recordRed)
             .frame(width: 10, height: 10)
             .opacity(dim ? 0.35 : 1)
+            .accessibilityLabel("Recording")
             .onAppear {
+                guard !reduceMotion else { return }
                 withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { dim = true }
             }
     }
@@ -311,23 +328,34 @@ private struct RecordingDot: View {
 @MainActor
 struct CountdownView: View {
     @ObservedObject var session: RecordingSession
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(.ultraThinMaterial)
-                .background(Circle().fill(Color.black.opacity(0.45)))
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.15)))
+            countdownDisc
             if case .countdown(let n) = session.phase {
                 Text(n > 0 ? "\(n)" : "Go")
                     .font(.system(size: n > 0 ? 64 : 46, weight: .bold, design: .rounded))
                     .foregroundStyle(n > 0 ? Color.white : tape)
                     .id(n)
-                    .transition(.scale(scale: 1.4).combined(with: .opacity))
+                    .transition(reduceMotion ? .opacity : .scale(scale: 1.4).combined(with: .opacity))
+                    .accessibilityLabel(n > 0 ? "Recording in \(n)" : "Go")
             }
         }
         .frame(width: 132, height: 132)
         .environment(\.colorScheme, .dark)
-        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: session.phase)
+        .animation(reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.35, dampingFraction: 0.75), value: session.phase)
+    }
+
+    @ViewBuilder
+    private var countdownDisc: some View {
+        if #available(macOS 26.0, *) {
+            Color.clear.glassEffect(.regular.tint(Color.black.opacity(0.35)), in: Circle())
+        } else {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .background(Circle().fill(Color.black.opacity(0.45)))
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.15)))
+        }
     }
 }

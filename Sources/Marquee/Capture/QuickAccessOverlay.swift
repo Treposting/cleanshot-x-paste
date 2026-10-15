@@ -174,10 +174,10 @@ struct QuickAccessView: View {
             .buttonStyle(.plain)
             .padding(4)
             .help("Close")
+            .accessibilityLabel("Close")
         }
         .frame(width: 260, height: 190)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(.white.opacity(0.15)))
+        .glassSurface(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func actionButton(_ symbol: String, _ help: String, action: @escaping () -> Void) -> some View {
@@ -185,8 +185,9 @@ struct QuickAccessView: View {
             Image(systemName: symbol)
                 .frame(maxWidth: .infinity, minHeight: 22)
         }
-        .buttonStyle(.bordered)
+        .glassButtonStyle()
         .controlSize(.small)
         .help(help)
+        .accessibilityLabel(help)
     }
 }

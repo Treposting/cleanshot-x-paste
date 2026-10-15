@@ -17,7 +17,7 @@ enum Toast {
                 .font(.system(size: 14, weight: .medium))
                 .padding(.horizontal, 18)
                 .padding(.vertical, 10)
-                .background(.regularMaterial, in: Capsule())
+                .glassSurface(Capsule())
         )
         host.layoutSubtreeIfNeeded()
         let size = host.fittingSize
@@ -42,6 +42,11 @@ enum Toast {
         }
         p.orderFrontRegardless()
         panel = p
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue]
+        )
 
         runAfter(duration) {
             guard generation == current else { return }

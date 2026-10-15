@@ -95,7 +95,7 @@ See all [releases](https://github.com/Treposting/marquee/releases).
    - right-click the app and choose **Open**, or
    - run `xattr -dr com.apple.quarantine /Applications/Marquee.app`.
 
-Marquee runs on **macOS 13 Ventura or later**. The DMG is a universal build, so it runs natively on Apple Silicon and Intel.
+Marquee runs on **macOS 13 Ventura through macOS 27 Golden Gate**. On macOS 26 and 27 it uses Liquid Glass, and it follows macOS 27's glass transparency setting. The DMG is a universal build, so it runs natively on Apple Silicon and Intel.
 
 ### Permissions
 
@@ -182,7 +182,7 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 
 ## Build from source
 
-You need macOS 13+ and Xcode 15+ (or the Swift 5.9 command-line tools).
+You need Xcode 26 or later. The app still runs on macOS 13 and later, but only the macOS 26 SDK turns on Liquid Glass.
 
 ```sh
 git clone https://github.com/Treposting/marquee.git
@@ -235,6 +235,12 @@ site/            Website (deployed to GitHub Pages)
 <summary><b>Captures only show my desktop wallpaper</b></summary>
 
 Marquee doesn't have Screen Recording permission yet. Open **System Settings → Privacy & Security → Screen & System Audio Recording**, turn Marquee on, then quit and reopen it.
+</details>
+
+<details>
+<summary><b>Clipboard history stays empty</b></summary>
+
+From macOS 15.4, macOS can ask before, or block, apps that read the clipboard in the background, and clipboard history depends on that. **Settings → Clipboard** shows a warning when this applies. Open **System Settings → Privacy & Security**, find the clipboard (Paste) setting, and choose **Always Allow** for Marquee.
 </details>
 
 <details>
