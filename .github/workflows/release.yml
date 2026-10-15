@@ -103,7 +103,16 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN" >/dev/null
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           rm -f "$RUNNER_TEMP/cert.p12"
-          echo "SIGN_IDENTITY=${CERT_NAME:-Marquee Code Signing}" >> "$GITHUB_ENV"
+          # A self-signed identity isn't trusted, so codesign can't find it by name.
+          # Sign by the identity's SHA-1 hash instead.
+          NAME="${CERT_NAME:-Marquee Code Signing}"
+          HASH="$(security find-identity -p codesigning "$KEYCHAIN" | awk -v n="\"$NAME\"" 'index($0, n) {print $2; exit}')"
+          if [[ -z "$HASH" ]]; then
+            security find-identity -p codesigning "$KEYCHAIN"
+            echo "::error::Couldn't find the signing identity \"$NAME\" in the imported certificate."
+            exit 1
+          fi
+          echo "SIGN_IDENTITY=$HASH" >> "$GITHUB_ENV"
 
       - name: Build universal app, DMG and update zip
         run: ./scripts/make-dmg.sh

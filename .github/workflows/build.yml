@@ -46,7 +46,11 @@ jobs:
           security import "$T/cert.p12" -k "$KC" -P test -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KC" >/dev/null
           cp -R build/Marquee.app "$T/Marquee.app"
-          codesign --force --keychain "$KC" --sign "Marquee CI Test" "$T/Marquee.app"
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          security find-identity -p codesigning "$KC"
+          # Untrusted self-signed identities aren't found by name; sign by their SHA-1 hash.
+          HASH="$(security find-identity -p codesigning "$KC" | awk '/"Marquee CI Test"/ {print $2; exit}')"
+          codesign --force --sign "$HASH" "$T/Marquee.app"
           codesign --verify --strict "$T/Marquee.app"
           codesign -dr - "$T/Marquee.app" 2>&1 | tail -1
           codesign -dr - "$T/Marquee.app" 2>&1 | grep -q "certificate leaf"
