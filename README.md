@@ -60,8 +60,9 @@ See all [releases](https://github.com/Treposting/marquee/releases).
 ### Record
 
 - **Area or full screen** to MP4 (H.264), at 30 or 60 fps.
-- **Computer audio** and **cursor**, each optional.
-- **Menu-bar timer.** The icon turns into a red stop button while you record.
+- **Recording toolbar.** After you pick the area, a toolbar appears under it. Choose any microphone (built-in, USB or Bluetooth) with a live level meter, turn desktop audio on or off, then press Record. A 3-2-1 countdown follows.
+- **Microphone and desktop audio together**, mixed into one soundtrack that plays everywhere.
+- **While recording:** a timer, the mic meter, Stop and Discard on the toolbar, plus a red stop button in the menu bar. The cursor is optional.
 - **Save as GIF** from the overlay with one click.
 
 ### Measure <sup>coming in 0.4 · macOS 14+</sup>
@@ -93,7 +94,8 @@ Marquee runs on **macOS 13 Ventura or later**. The DMG is a universal build, so 
 
 | Permission | Needed for | When macOS asks |
 |---|---|---|
-| **Screen & System Audio Recording** | Screenshots of other apps, screen recording, computer audio | On your first capture. Quit and reopen Marquee after allowing it. |
+| **Screen & System Audio Recording** | Screenshots of other apps, screen recording, desktop audio | On your first capture. Quit and reopen Marquee after allowing it. |
+| **Microphone** | Recording your voice | The first time you turn on a microphone in the recording toolbar. |
 | **Accessibility** | Pasting a history item straight into the active app | The first time you paste from history. Without it, the item is copied and you press ⌘V yourself. |
 
 ## Using Marquee
@@ -148,16 +150,18 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 | <kbd>⌘</kbd><kbd>S</kbd> | Capture the screen with measurements |
 | <kbd>Esc</kbd> | Stop measuring |
 
-### When recording an area
+### When recording
 
-Drag to select. Press <kbd>↩</kbd> to record the whole screen instead, or <kbd>Esc</kbd> to cancel. To stop, click the red button in the menu bar or press the record shortcut again.
+1. Drag to select an area. Press <kbd>↩</kbd> to use the whole screen, or <kbd>Esc</kbd> to cancel.
+2. On the toolbar, pick a microphone and turn desktop audio on or off. Then press <kbd>↩</kbd> or **Record**. Pressing the record shortcut again also starts it.
+3. To finish, press **Stop** on the toolbar, click the red button in the menu bar, or press the record shortcut again. **Discard** throws the recording away.
 
 ### Settings
 
 | Tab | What you can change |
 |---|---|
 | Capture | Show the overlay, auto-hide it, copy and/or save after capture, save folder, shutter sound, window shadow, launch at login, automatic update checks |
-| Recording | Frame rate, cursor, computer audio |
+| Recording | Default microphone, desktop audio, countdown, frame rate, cursor |
 | Measure | Edge-detection tolerance |
 | Clipboard | Turn history on or off, history size (100 to 5,000 items), paste directly into apps |
 | Shortcuts | Every global shortcut |

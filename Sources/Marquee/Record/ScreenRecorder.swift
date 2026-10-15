@@ -7,6 +7,7 @@ import ScreenCaptureKit
 final class ScreenRecorder {
     private var stream: SCStream?
     private var output: RecordingOutput?
+    private var microphone: MicrophoneCapture?
     private var borderWindow: NSWindow?
 
     private(set) var startDate: Date?
@@ -15,7 +16,10 @@ final class ScreenRecorder {
     /// Called when the stream stops on its own (display disconnected, permission revoked…).
     var onUnexpectedStop: (() -> Void)?
 
-    func start(screen: NSScreen, rect: CGRect) async throws {
+    /// - Parameters:
+    ///   - desktopAudio: record what the Mac plays (other apps' sound).
+    ///   - microphone: an already-running microphone to record, or nil for none.
+    func start(screen: NSScreen, rect: CGRect, desktopAudio: Bool, microphone: MicrophoneCapture?) async throws {
         guard !isRecording else { throw RecorderError.alreadyRecording }
 
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -39,7 +43,7 @@ final class ScreenRecorder {
 
         let (width, height) = Self.outputSize(for: local.size, backingScale: screen.backingScaleFactor)
         let fps = Preferences.recordFPS
-        let captureAudio = Preferences.recordAudio
+        let captureAudio = desktopAudio
 
         let config = SCStreamConfiguration()
         config.sourceRect = local
@@ -56,7 +60,10 @@ final class ScreenRecorder {
 
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("Marquee-\(UUID().uuidString).mp4")
-        let output = try RecordingOutput(url: url, width: width, height: height, fps: fps, captureAudio: captureAudio)
+        let output = try RecordingOutput(
+            url: url, width: width, height: height, fps: fps,
+            captureAudio: captureAudio, captureMicrophone: microphone != nil
+        )
         output.onStreamError = { [weak self] error in
             NSLog("Marquee: recording stream stopped: \(error)")
             Task { @MainActor in self?.onUnexpectedStop?() }
@@ -69,6 +76,10 @@ final class ScreenRecorder {
         }
         try await stream.startCapture()
 
+        microphone?.sink = { [weak output] buffer in
+            output?.queue.async { output?.appendMicrophone(buffer) }
+        }
+        self.microphone = microphone
         self.stream = stream
         self.output = output
         startDate = Date()
@@ -82,6 +93,8 @@ final class ScreenRecorder {
         guard let stream, let output else { return nil }
         self.stream = nil
         self.output = nil
+        microphone?.sink = nil
+        microphone = nil
         startDate = nil
         hideBorder()
         do {
@@ -89,7 +102,16 @@ final class ScreenRecorder {
         } catch {
             NSLog("Marquee: stopCapture failed: \(error)")
         }
-        return await output.finish()
+        guard let url = await output.finish() else { return nil }
+        if output.hasTwoAudioTracks {
+            do {
+                try await AudioMixdown.mixAudioTracks(at: url)
+            } catch {
+                // The file still plays; it just keeps desktop audio and mic on separate tracks.
+                NSLog("Marquee: couldn't mix audio tracks: \(error)")
+            }
+        }
+        return url
     }
 
     /// Pixel size of the video: Retina resolution, but kept within H.264's
@@ -105,7 +127,8 @@ final class ScreenRecorder {
 
     // MARK: - Border around the recorded area
 
-    private func showBorder(around rect: CGRect) {
+    func showBorder(around rect: CGRect) {
+        hideBorder()
         let window = NSWindow(
             contentRect: rect.insetBy(dx: -4, dy: -4),
             styleMask: [.borderless],
@@ -123,7 +146,7 @@ final class ScreenRecorder {
         borderWindow = window
     }
 
-    private func hideBorder() {
+    func hideBorder() {
         borderWindow?.orderOut(nil)
         borderWindow = nil
     }

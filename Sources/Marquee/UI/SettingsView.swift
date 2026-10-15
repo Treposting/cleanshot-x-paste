@@ -213,23 +213,53 @@ private struct MeasureSettings: View {
 private struct RecordingSettings: View {
     @AppStorage(Preferences.Key.recordFPS.rawValue) private var fps = 30
     @AppStorage(Preferences.Key.recordShowCursor.rawValue) private var showCursor = true
-    @AppStorage(Preferences.Key.recordAudio.rawValue) private var recordAudio = false
+    @AppStorage(Preferences.Key.recordAudio.rawValue) private var desktopAudio = false
+    @AppStorage(Preferences.Key.recordMicrophone.rawValue) private var micEnabled = false
+    @AppStorage(Preferences.Key.recordMicrophoneID.rawValue) private var micID = ""
+    @AppStorage(Preferences.Key.recordCountdown.rawValue) private var countdown = true
+    @State private var devices: [MicrophoneCapture.Device] = []
+
+    /// "" = off, "default" = system default input, otherwise a device ID.
+    private var micSelection: Binding<String> {
+        Binding(
+            get: { micEnabled ? (micID.isEmpty ? "default" : micID) : "" },
+            set: { value in
+                micEnabled = !value.isEmpty
+                micID = value == "default" ? "" : value
+            }
+        )
+    }
 
     var body: some View {
         Form {
+            Section("Audio") {
+                Picker("Microphone", selection: micSelection) {
+                    Text("None").tag("")
+                    Text("System default").tag("default")
+                    if !devices.isEmpty { Divider() }
+                    ForEach(devices) { device in
+                        Text(device.name).tag(device.id)
+                    }
+                }
+                Toggle("Record desktop audio", isOn: $desktopAudio)
+                Text("Desktop audio is what your Mac plays: videos, calls, music. When both are on, they're mixed into one soundtrack. You can change both on the recording toolbar too.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Video") {
                 Picker("Frame rate", selection: $fps) {
                     Text("30 fps").tag(30)
                     Text("60 fps").tag(60)
                 }
                 Toggle("Show mouse cursor", isOn: $showCursor)
-                Toggle("Record computer audio", isOn: $recordAudio)
+                Toggle("Count down 3 seconds before recording", isOn: $countdown)
             }
-            Text("Recordings are saved as H.264 MP4. Use \u{201C}Save as GIF\u{201D} in the overlay to export a GIF. Click the red stop button in the menu bar (or press the record shortcut again) to finish.")
+            Text("Recordings are saved as H.264 MP4. Use \u{201C}Save as GIF\u{201D} in the overlay to export a GIF. Stop from the toolbar, the menu bar, or by pressing the record shortcut again.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .formStyle(.grouped)
+        .onAppear { devices = MicrophoneCapture.devices() }
     }
 }
 

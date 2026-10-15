@@ -1,0 +1,341 @@
+import AppKit
+import SwiftUI
+
+/// State shared by the recording toolbar and RecordingController.
+@MainActor
+final class RecordingSession: ObservableObject {
+    enum Phase: Equatable {
+        case ready
+        case countdown(Int)
+        case starting
+        case recording
+        case saving
+    }
+
+    @Published var phase: Phase = .ready
+    @Published var elapsed: TimeInterval = 0
+    @Published var micEnabled: Bool
+    @Published var micID: String?
+    @Published var micName = "No microphone"
+    @Published var micLevel: Float = 0
+    @Published var micProblem: String?
+    @Published var desktopAudio: Bool
+    let sizeLabel: String
+
+    init(micEnabled: Bool, micID: String?, desktopAudio: Bool, sizeLabel: String) {
+        self.micEnabled = micEnabled
+        self.micID = micID
+        self.desktopAudio = desktopAudio
+        self.sizeLabel = sizeLabel
+    }
+}
+
+/// The floating bar under the recording area: choose audio sources, start, stop.
+@MainActor
+struct RecordingToolbar: View {
+    struct Actions {
+        var start: () -> Void
+        var cancel: () -> Void
+        var stop: () -> Void
+        var discard: () -> Void
+        var showMicMenu: () -> Void
+        var toggleDesktopAudio: () -> Void
+    }
+
+    @ObservedObject var session: RecordingSession
+    let actions: Actions
+
+    var body: some View {
+        HStack(spacing: 6) {
+            switch session.phase {
+            case .ready:
+                readyControls
+            case .countdown(let seconds):
+                IconButton(symbol: "xmark", help: "Cancel (Esc)", action: actions.cancel)
+                    .keyboardShortcut(.cancelAction)
+                Text("Recording in \(seconds)…")
+                    .font(.system(size: 13, weight: .medium))
+                    .monospacedDigit()
+                    .padding(.horizontal, 10)
+            case .starting:
+                ProgressView().controlSize(.small).padding(.leading, 8)
+                Text("Starting…").font(.system(size: 13, weight: .medium)).padding(.trailing, 10)
+            case .recording:
+                recordingControls
+            case .saving:
+                ProgressView().controlSize(.small).padding(.leading, 8)
+                Text("Saving recording…").font(.system(size: 13, weight: .medium)).padding(.trailing, 10)
+            }
+        }
+        .padding(6)
+        .frame(height: 48)
+        .background(ToolbarBackground())
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
+        .animation(.easeOut(duration: 0.18), value: session.phase)
+    }
+
+    // MARK: Ready
+
+    @ViewBuilder
+    private var readyControls: some View {
+        IconButton(symbol: "xmark", help: "Cancel (Esc)", action: actions.cancel)
+            .keyboardShortcut(.cancelAction)
+
+        Text(session.sizeLabel)
+            .font(.system(size: 12, weight: .medium, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+
+        ToolbarDivider()
+
+        Button(action: actions.showMicMenu) {
+            HStack(spacing: 7) {
+                Image(systemName: micSymbol)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 16)
+                Text(micTitle)
+                    .lineLimit(1)
+                    .frame(maxWidth: 170, alignment: .leading)
+                if session.micEnabled {
+                    LevelMeter(level: session.micLevel)
+                }
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .opacity(0.6)
+            }
+        }
+        .buttonStyle(ChipStyle(active: session.micEnabled, warning: session.micProblem != nil))
+        .help(session.micProblem ?? "Choose a microphone")
+
+        Button(action: actions.toggleDesktopAudio) {
+            HStack(spacing: 7) {
+                Image(systemName: session.desktopAudio ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 18)
+                Text("Desktop audio")
+            }
+        }
+        .buttonStyle(ChipStyle(active: session.desktopAudio))
+        .help(session.desktopAudio ? "Recording what your Mac plays. Click to turn off." : "Click to record what your Mac plays")
+
+        ToolbarDivider()
+
+        Button(action: actions.start) {
+            HStack(spacing: 7) {
+                Circle().fill(.white).frame(width: 9, height: 9)
+                Text("Record").fontWeight(.semibold)
+            }
+        }
+        .buttonStyle(RecordButtonStyle())
+        .keyboardShortcut(.defaultAction)
+        .help("Start recording (Return)")
+    }
+
+    private var micSymbol: String {
+        if session.micProblem != nil { return "mic.badge.xmark" }
+        return session.micEnabled ? "mic.fill" : "mic.slash.fill"
+    }
+
+    private var micTitle: String {
+        if session.micProblem != nil { return "Microphone blocked" }
+        return session.micEnabled ? session.micName : "No microphone"
+    }
+
+    // MARK: Recording
+
+    @ViewBuilder
+    private var recordingControls: some View {
+        HStack(spacing: 8) {
+            RecordingDot()
+            Text(Self.format(session.elapsed))
+                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 10)
+
+        if session.micEnabled {
+            HStack(spacing: 6) {
+                Image(systemName: "mic.fill").font(.system(size: 12, weight: .semibold))
+                LevelMeter(level: session.micLevel)
+            }
+            .padding(.horizontal, 6)
+            .help(session.micName)
+        }
+        if session.desktopAudio {
+            Image(systemName: "speaker.wave.2.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .padding(.horizontal, 6)
+                .help("Recording desktop audio")
+        }
+
+        ToolbarDivider()
+
+        Button(action: actions.stop) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 2.5).fill(.white).frame(width: 9, height: 9)
+                Text("Stop").fontWeight(.semibold)
+            }
+        }
+        .buttonStyle(RecordButtonStyle())
+        .keyboardShortcut(.defaultAction)
+        .help("Stop and save")
+
+        IconButton(symbol: "trash", help: "Discard this recording", action: actions.discard)
+    }
+
+    static func format(_ interval: TimeInterval) -> String {
+        let total = Int(interval)
+        let hours = total / 3600, minutes = (total % 3600) / 60, seconds = total % 60
+        return hours > 0
+            ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
+            : String(format: "%d:%02d", minutes, seconds)
+    }
+}
+
+// MARK: - Pieces
+
+private let tape = Color(red: 1, green: 0.81, blue: 0.1)
+private let recordRed = Color(red: 1, green: 0.23, blue: 0.19)
+
+private struct ToolbarBackground: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.ultraThinMaterial)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.black.opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12))
+            )
+            .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
+    }
+}
+
+private struct ToolbarDivider: View {
+    var body: some View {
+        Rectangle().fill(Color.white.opacity(0.14)).frame(width: 1, height: 22).padding(.horizontal, 2)
+    }
+}
+
+private struct IconButton: View {
+    let symbol: String
+    let help: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .bold))
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(Color.white.opacity(hovering ? 0.16 : 0.08)))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(help)
+    }
+}
+
+private struct ChipStyle: ButtonStyle {
+    var active: Bool
+    var warning = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(warning ? Color.orange : (active ? tape : Color.white.opacity(0.85)))
+            .padding(.horizontal, 11)
+            .frame(height: 34)
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(active && !warning ? tape.opacity(0.16) : Color.white.opacity(0.07))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(active && !warning ? tape.opacity(0.35) : Color.clear)
+            )
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .contentShape(Rectangle())
+    }
+}
+
+private struct RecordButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .frame(height: 34)
+            .background(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(recordRed.opacity(configuration.isPressed ? 0.75 : 1))
+            )
+            .contentShape(Rectangle())
+    }
+}
+
+/// Six bars that light up with the input level.
+private struct LevelMeter: View {
+    let level: Float
+    private let bars = 6
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 2) {
+            ForEach(0..<bars, id: \.self) { i in
+                let threshold = Float(i) / Float(bars)
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(level > threshold ? barColor(i) : Color.white.opacity(0.18))
+                    .frame(width: 3, height: 5 + CGFloat(i) * 2)
+            }
+        }
+        .frame(height: 16)
+        .animation(.linear(duration: 0.08), value: level)
+        .accessibilityLabel("Microphone level")
+    }
+
+    private func barColor(_ i: Int) -> Color {
+        i >= bars - 1 ? recordRed : (i >= bars - 2 ? .orange : tape)
+    }
+}
+
+private struct RecordingDot: View {
+    @State private var dim = false
+
+    var body: some View {
+        Circle()
+            .fill(recordRed)
+            .frame(width: 10, height: 10)
+            .opacity(dim ? 0.35 : 1)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) { dim = true }
+            }
+    }
+}
+
+/// Big 3-2-1 shown over the recording area before recording starts.
+@MainActor
+struct CountdownView: View {
+    @ObservedObject var session: RecordingSession
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .background(Circle().fill(Color.black.opacity(0.45)))
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.15)))
+            if case .countdown(let n) = session.phase {
+                Text("\(n)")
+                    .font(.system(size: 64, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .id(n)
+                    .transition(.scale(scale: 1.4).combined(with: .opacity))
+            }
+        }
+        .frame(width: 132, height: 132)
+        .environment(\.colorScheme, .dark)
+        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: session.phase)
+    }
+}

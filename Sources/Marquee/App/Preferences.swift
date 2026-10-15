@@ -16,6 +16,9 @@ enum Preferences {
         case recordFPS
         case recordShowCursor
         case recordAudio
+        case recordMicrophone
+        case recordMicrophoneID
+        case recordCountdown
         case measureTolerance
         case autoCheckUpdates
         case skippedVersion
@@ -55,6 +58,8 @@ enum Preferences {
             Key.recordFPS.rawValue: 30,
             Key.recordShowCursor.rawValue: true,
             Key.recordAudio.rawValue: false,
+            Key.recordMicrophone.rawValue: false,
+            Key.recordCountdown.rawValue: true,
             Key.measureTolerance.rawValue: 12,
             Key.autoCheckUpdates.rawValue: true,
         ])
@@ -71,7 +76,24 @@ enum Preferences {
 
     static var recordFPS: Int { defaults.integer(forKey: Key.recordFPS.rawValue) == 60 ? 60 : 30 }
     static var recordShowCursor: Bool { defaults.bool(forKey: Key.recordShowCursor.rawValue) }
-    static var recordAudio: Bool { defaults.bool(forKey: Key.recordAudio.rawValue) }
+    /// Record desktop audio (what the Mac plays).
+    static var recordAudio: Bool {
+        get { defaults.bool(forKey: Key.recordAudio.rawValue) }
+        set { defaults.set(newValue, forKey: Key.recordAudio.rawValue) }
+    }
+    static var recordMicrophone: Bool {
+        get { defaults.bool(forKey: Key.recordMicrophone.rawValue) }
+        set { defaults.set(newValue, forKey: Key.recordMicrophone.rawValue) }
+    }
+    /// The chosen microphone's unique ID; nil means the system default input.
+    static var recordMicrophoneID: String? {
+        get {
+            let id = defaults.string(forKey: Key.recordMicrophoneID.rawValue)
+            return id?.isEmpty == false ? id : nil
+        }
+        set { defaults.set(newValue, forKey: Key.recordMicrophoneID.rawValue) }
+    }
+    static var recordCountdown: Bool { defaults.bool(forKey: Key.recordCountdown.rawValue) }
 
     static var measureTolerance: Int { min(max(0, defaults.integer(forKey: Key.measureTolerance.rawValue)), 64) }
     static var autoCheckUpdates: Bool { defaults.bool(forKey: Key.autoCheckUpdates.rawValue) }

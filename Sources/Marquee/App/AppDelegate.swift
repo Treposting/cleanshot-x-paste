@@ -6,14 +6,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var mainMenu = NSMenu()
     private let captureService = CaptureService()
-    private let recorder = ScreenRecorder()
     private let store = ClipboardStore()
     private lazy var monitor = ClipboardMonitor(store: store)
     private lazy var historyPanel = HistoryPanelController(store: store, monitor: monitor)
     private var settingsWindow: NSWindow?
     private var pauseItem: NSMenuItem?
     private var recordingTimer: Timer?
-    private var isStartingRecording = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Preferences.migrateLegacySettings()
@@ -22,7 +20,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registerHotKeys()
         observeShortcutChanges()
         monitor.start()
-        recorder.onUnexpectedStop = { [weak self] in self?.stopRecording() }
+        let recording = RecordingController.shared
+        recording.onRecordingChanged = { [weak self] active in self?.setRecordingUI(active) }
+        recording.onFinished = { [weak self] url in self?.deliverRecording(url) }
+        recording.onError = { [weak self] error in self?.showRecordingError(error) }
         Updater.shared.onStateChange = { [weak self] in self?.rebuildMenu() }
         Updater.shared.startAutomaticChecks()
     }
@@ -107,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         menu.addItem(item("Quit Marquee", #selector(quit), key: "q"))
         mainMenu = menu
-        if !recorder.isRecording {
+        if !RecordingController.shared.isRecording {
             statusItem.menu = menu
         }
     }
@@ -184,7 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Screenshot flow
 
     private func capture(_ mode: CaptureMode) {
-        guard !recorder.isRecording, !MeasureController.shared.isActive else { return }
+        guard !RecordingController.shared.isBusy, !MeasureController.shared.isActive else { return }
         captureService.capture(mode) { [weak self] url in
             guard let self, let url else { return }
             if mode == .text {
@@ -228,42 +229,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Recording flow
 
     private func toggleRecording(selectArea: Bool) {
-        if recorder.isRecording {
-            stopRecording()
-            return
-        }
-        guard !isStartingRecording else { return }
-        if selectArea {
-            AreaSelector.select { [weak self] selection in
-                guard let self, let selection else { return }
-                self.startRecording(screen: selection.0, rect: selection.1)
-            }
-        } else if let screen = NSScreen.underMouse {
-            startRecording(screen: screen, rect: screen.frame)
-        }
-    }
-
-    private func startRecording(screen: NSScreen, rect: CGRect) {
-        isStartingRecording = true
-        Task {
-            defer { isStartingRecording = false }
-            do {
-                try await recorder.start(screen: screen, rect: rect)
-                setRecordingUI(true)
-            } catch {
-                showRecordingError(error)
-            }
-        }
+        guard !MeasureController.shared.isActive else { return }
+        RecordingController.shared.toggle(selectArea: selectArea)
     }
 
     @objc private func stopRecording() {
-        guard recorder.isRecording else { return }
-        setRecordingUI(false)
+        RecordingController.shared.stop()
+    }
+
+    private func deliverRecording(_ url: URL) {
         Task {
-            guard let url = await recorder.stop() else {
-                Toast.show("Nothing was recorded")
-                return
-            }
             let poster = await VideoTools.thumbnail(for: url)
                 ?? NSImage(systemSymbolName: "film", accessibilityDescription: nil)
                 ?? NSImage()
@@ -301,7 +276,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateRecordingTime() {
-        guard let start = recorder.startDate else { return }
+        guard let start = RecordingController.shared.startDate else { return }
         let seconds = Int(Date().timeIntervalSince(start))
         statusItem.button?.title = String(format: " %d:%02d", seconds / 60, seconds % 60)
     }

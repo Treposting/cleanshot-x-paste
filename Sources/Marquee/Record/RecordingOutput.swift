@@ -15,12 +15,16 @@ final class RecordingOutput: NSObject, SCStreamOutput, SCStreamDelegate, @unchec
     private let writer: AVAssetWriter
     private let videoInput: AVAssetWriterInput
     private let audioInput: AVAssetWriterInput?
+    private let micInput: AVAssetWriterInput?
     private var sessionStarted = false
     private var finished = false
     private var lastVideoSample: CMSampleBuffer?
     private var lastVideoTime: CMTime = .invalid
 
-    init(url: URL, width: Int, height: Int, fps: Int, captureAudio: Bool) throws {
+    /// True when both desktop audio and a microphone are recorded (two audio tracks).
+    var hasTwoAudioTracks: Bool { audioInput != nil && micInput != nil }
+
+    init(url: URL, width: Int, height: Int, fps: Int, captureAudio: Bool, captureMicrophone: Bool = false) throws {
         self.url = url
         writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
 
@@ -42,29 +46,32 @@ final class RecordingOutput: NSObject, SCStreamOutput, SCStreamDelegate, @unchec
         guard writer.canAdd(videoInput) else { throw RecorderError.writerSetupFailed }
         writer.add(videoInput)
 
-        if captureAudio {
-            let audioSettings: [String: Any] = [
-                AVFormatIDKey: kAudioFormatMPEG4AAC,
-                AVSampleRateKey: 48_000,
-                AVNumberOfChannelsKey: 2,
-                AVEncoderBitRateKey: 160_000,
-            ]
-            let input = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
-            input.expectsMediaDataInRealTime = true
-            if writer.canAdd(input) {
-                writer.add(input)
-                audioInput = input
-            } else {
-                audioInput = nil
-            }
-        } else {
-            audioInput = nil
-        }
+        audioInput = captureAudio ? RecordingOutput.addAudioInput(to: writer) : nil
+        micInput = captureMicrophone ? RecordingOutput.addAudioInput(to: writer) : nil
 
         super.init()
         guard writer.startWriting() else {
             throw writer.error ?? RecorderError.writerSetupFailed
         }
+    }
+
+    private static func addAudioInput(to writer: AVAssetWriter) -> AVAssetWriterInput? {
+        let input = AVAssetWriterInput(mediaType: .audio, outputSettings: [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: 48_000,
+            AVNumberOfChannelsKey: 2,
+            AVEncoderBitRateKey: 160_000,
+        ])
+        input.expectsMediaDataInRealTime = true
+        guard writer.canAdd(input) else { return nil }
+        writer.add(input)
+        return input
+    }
+
+    /// Appends a microphone buffer. Call on `queue`.
+    func appendMicrophone(_ sampleBuffer: CMSampleBuffer) {
+        guard !finished, sessionStarted, let micInput, micInput.isReadyForMoreMediaData, sampleBuffer.isValid else { return }
+        micInput.append(sampleBuffer)
     }
 
     // MARK: - SCStreamOutput
@@ -115,6 +122,7 @@ final class RecordingOutput: NSObject, SCStreamOutput, SCStreamDelegate, @unchec
             holdLastFrameUntilNow()
             videoInput.markAsFinished()
             audioInput?.markAsFinished()
+            micInput?.markAsFinished()
             writer.endSession(atSourceTime: lastVideoTime)
             lastVideoSample = nil
             return true
