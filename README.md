@@ -60,9 +60,9 @@ See all [releases](https://github.com/Treposting/marquee/releases).
 ### Record
 
 - **Area or full screen** to MP4 (H.264), at 30 or 60 fps.
-- **Recording toolbar.** After you pick the area, a toolbar appears under it. Choose any microphone (built-in, USB or Bluetooth) with a live level meter, turn desktop audio on or off, then press Record. A 3-2-1 countdown follows.
+- **Recording toolbar.** After you pick the area, a toolbar appears under it. Choose any microphone (built-in, USB or Bluetooth) with a live level meter, turn desktop audio on or off, then press Record. Recording starts instantly or after a 3, 5 or 10 second countdown that ends with "Go", whichever you choose in Settings.
 - **Microphone and desktop audio together**, mixed into one soundtrack that plays everywhere.
-- **While recording:** a timer, the mic meter, Stop and Discard on the toolbar, plus a red stop button in the menu bar. The cursor is optional.
+- **While recording:** a timer, the mic meter, Stop and Discard on the toolbar. The menu bar shows a blinking red dot with the elapsed time (`12s`, then `4:05`, then `1:04:05`); click it to stop. The cursor is optional.
 - **Save as GIF** from the overlay with one click.
 
 ### Measure <sup>coming in 0.4 · macOS 14+</sup>
@@ -161,7 +161,7 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 | Tab | What you can change |
 |---|---|
 | Capture | Show the overlay, auto-hide it, copy and/or save after capture, save folder, shutter sound, window shadow, launch at login, automatic update checks |
-| Recording | Default microphone, desktop audio, countdown, frame rate, cursor |
+| Recording | Default microphone, desktop audio, start instantly or after 3/5/10 seconds, frame rate, cursor |
 | Measure | Edge-detection tolerance |
 | Clipboard | Turn history on or off, history size (100 to 5,000 items), paste directly into apps |
 | Shortcuts | Every global shortcut |

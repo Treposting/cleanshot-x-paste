@@ -53,7 +53,7 @@ struct RecordingToolbar: View {
             case .countdown(let seconds):
                 IconButton(symbol: "xmark", help: "Cancel (Esc)", action: actions.cancel)
                     .keyboardShortcut(.cancelAction)
-                Text("Recording in \(seconds)…")
+                Text(seconds > 0 ? "Recording in \(seconds)…" : "Go!")
                     .font(.system(size: 13, weight: .medium))
                     .monospacedDigit()
                     .padding(.horizontal, 10)
@@ -148,7 +148,7 @@ struct RecordingToolbar: View {
     private var recordingControls: some View {
         HStack(spacing: 8) {
             RecordingDot()
-            Text(Self.format(session.elapsed))
+            Text(ElapsedTime.format(session.elapsed))
                 .font(.system(size: 14, weight: .semibold, design: .monospaced))
                 .monospacedDigit()
         }
@@ -182,14 +182,6 @@ struct RecordingToolbar: View {
         .help("Stop and save")
 
         IconButton(symbol: "trash", help: "Discard this recording", action: actions.discard)
-    }
-
-    static func format(_ interval: TimeInterval) -> String {
-        let total = Int(interval)
-        let hours = total / 3600, minutes = (total % 3600) / 60, seconds = total % 60
-        return hours > 0
-            ? String(format: "%d:%02d:%02d", hours, minutes, seconds)
-            : String(format: "%d:%02d", minutes, seconds)
     }
 }
 
@@ -327,9 +319,9 @@ struct CountdownView: View {
                 .background(Circle().fill(Color.black.opacity(0.45)))
                 .overlay(Circle().strokeBorder(Color.white.opacity(0.15)))
             if case .countdown(let n) = session.phase {
-                Text("\(n)")
-                    .font(.system(size: 64, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                Text(n > 0 ? "\(n)" : "Go")
+                    .font(.system(size: n > 0 ? 64 : 46, weight: .bold, design: .rounded))
+                    .foregroundStyle(n > 0 ? Color.white : tape)
                     .id(n)
                     .transition(.scale(scale: 1.4).combined(with: .opacity))
             }

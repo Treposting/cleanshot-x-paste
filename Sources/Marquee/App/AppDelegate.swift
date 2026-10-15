@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var pauseItem: NSMenuItem?
     private var recordingTimer: Timer?
+    private var recordingDotVisible = true
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Preferences.migrateLegacySettings()
@@ -246,18 +247,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// While recording, the menu-bar icon becomes a red stop button with a timer.
+    /// While recording, the menu-bar item becomes a blinking red dot and the elapsed time
+    /// ("12s", then "4:05", then "1:04:05"). Clicking it stops the recording.
     private func setRecordingUI(_ recording: Bool) {
         guard let button = statusItem.button else { return }
         recordingTimer?.invalidate()
         recordingTimer = nil
         if recording {
             statusItem.menu = nil
-            button.image = NSImage(systemSymbolName: "stop.circle.fill", accessibilityDescription: "Stop recording")
-            button.contentTintColor = .systemRed
+            recordingDotVisible = true
+            button.image = Self.recordingDot(visible: true)
             button.imagePosition = .imageLeading
-            button.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-            button.title = " 0:00"
+            button.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .medium)
+            button.title = " " + ElapsedTime.format(0)
+            button.toolTip = "Recording. Click to stop."
             button.target = self
             button.action = #selector(stopRecording)
             let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
@@ -267,8 +270,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             recordingTimer = timer
         } else {
             button.image = Self.idleIcon
-            button.contentTintColor = nil
             button.title = ""
+            button.toolTip = nil
             button.action = nil
             button.target = nil
             statusItem.menu = mainMenu
@@ -276,9 +279,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateRecordingTime() {
-        guard let start = RecordingController.shared.startDate else { return }
-        let seconds = Int(Date().timeIntervalSince(start))
-        statusItem.button?.title = String(format: " %d:%02d", seconds / 60, seconds % 60)
+        guard let button = statusItem.button, let start = RecordingController.shared.startDate else { return }
+        recordingDotVisible.toggle()
+        button.image = Self.recordingDot(visible: recordingDotVisible)
+        button.title = " " + ElapsedTime.format(Date().timeIntervalSince(start))
+    }
+
+    private static func recordingDot(visible: Bool) -> NSImage {
+        let image = NSImage(size: NSSize(width: 12, height: 12), flipped: false) { rect in
+            NSColor.systemRed.withAlphaComponent(visible ? 1 : 0.25).setFill()
+            NSBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5)).fill()
+            return true
+        }
+        image.isTemplate = false
+        return image
     }
 
     private func showRecordingError(_ error: Error) {

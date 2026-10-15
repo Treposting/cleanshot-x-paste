@@ -175,19 +175,24 @@ final class RecordingController {
 
     func start() {
         guard let session, session.phase == .ready else { return }
-        if Preferences.recordCountdown {
-            showCountdown(session: session)
-            countdownTask = Task { [weak self] in
-                for n in [3, 2, 1] {
-                    session.phase = .countdown(n)
-                    try? await Task.sleep(nanoseconds: 1_000_000_000)
-                    if Task.isCancelled { return }
-                }
-                self?.hideCountdown()
-                self?.beginRecording()
-            }
-        } else {
+        let seconds = Preferences.recordCountdownSeconds
+        guard seconds > 0 else {
             beginRecording()
+            return
+        }
+        showCountdown(session: session)
+        countdownTask = Task { [weak self] in
+            // 3, 2, 1 … then "Go" for a beat, then record.
+            for n in stride(from: seconds, through: 1, by: -1) {
+                session.phase = .countdown(n)
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if Task.isCancelled { return }
+            }
+            session.phase = .countdown(0)
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            if Task.isCancelled { return }
+            self?.hideCountdown()
+            self?.beginRecording()
         }
     }
 

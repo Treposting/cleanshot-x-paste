@@ -216,7 +216,7 @@ private struct RecordingSettings: View {
     @AppStorage(Preferences.Key.recordAudio.rawValue) private var desktopAudio = false
     @AppStorage(Preferences.Key.recordMicrophone.rawValue) private var micEnabled = false
     @AppStorage(Preferences.Key.recordMicrophoneID.rawValue) private var micID = ""
-    @AppStorage(Preferences.Key.recordCountdown.rawValue) private var countdown = true
+    @AppStorage(Preferences.Key.recordCountdownSeconds.rawValue) private var countdown = 3
     @State private var devices: [MicrophoneCapture.Device] = []
 
     /// "" = off, "default" = system default input, otherwise a device ID.
@@ -246,13 +246,25 @@ private struct RecordingSettings: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Start") {
+                Picker("Start recording", selection: $countdown) {
+                    Text("Instantly").tag(0)
+                    Text("After 3 seconds").tag(3)
+                    Text("After 5 seconds").tag(5)
+                    Text("After 10 seconds").tag(10)
+                }
+                Text(countdown == 0
+                     ? "Recording starts as soon as you press Record."
+                     : "Counts down from \(countdown), shows Go, then starts recording.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Video") {
                 Picker("Frame rate", selection: $fps) {
                     Text("30 fps").tag(30)
                     Text("60 fps").tag(60)
                 }
                 Toggle("Show mouse cursor", isOn: $showCursor)
-                Toggle("Count down 3 seconds before recording", isOn: $countdown)
             }
             Text("Recordings are saved as H.264 MP4. Use \u{201C}Save as GIF\u{201D} in the overlay to export a GIF. Stop from the toolbar, the menu bar, or by pressing the record shortcut again.")
                 .font(.caption)

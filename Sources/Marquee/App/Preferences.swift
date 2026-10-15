@@ -18,7 +18,7 @@ enum Preferences {
         case recordAudio
         case recordMicrophone
         case recordMicrophoneID
-        case recordCountdown
+        case recordCountdownSeconds
         case measureTolerance
         case autoCheckUpdates
         case skippedVersion
@@ -59,7 +59,7 @@ enum Preferences {
             Key.recordShowCursor.rawValue: true,
             Key.recordAudio.rawValue: false,
             Key.recordMicrophone.rawValue: false,
-            Key.recordCountdown.rawValue: true,
+            Key.recordCountdownSeconds.rawValue: 3,
             Key.measureTolerance.rawValue: 12,
             Key.autoCheckUpdates.rawValue: true,
         ])
@@ -93,7 +93,10 @@ enum Preferences {
         }
         set { defaults.set(newValue, forKey: Key.recordMicrophoneID.rawValue) }
     }
-    static var recordCountdown: Bool { defaults.bool(forKey: Key.recordCountdown.rawValue) }
+    /// Seconds of 3-2-1 countdown before recording starts; 0 starts instantly.
+    static var recordCountdownSeconds: Int {
+        min(max(0, defaults.integer(forKey: Key.recordCountdownSeconds.rawValue)), 10)
+    }
 
     static var measureTolerance: Int { min(max(0, defaults.integer(forKey: Key.measureTolerance.rawValue)), 64) }
     static var autoCheckUpdates: Bool { defaults.bool(forKey: Key.autoCheckUpdates.rawValue) }
