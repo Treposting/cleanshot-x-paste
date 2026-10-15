@@ -9,7 +9,7 @@ final class AllInOneController {
     static let shared = AllInOneController()
 
     enum Choice {
-        case screenshot, record, copyText, pin
+        case screenshot, record, copyText, pin, pickColor, settings
     }
 
     /// Set by the app delegate: runs the chosen action on the selected area.
@@ -71,8 +71,11 @@ final class AllInOneController {
         )
         // A fixed-size panel: the hosting view must not resize its window while the
         // selection (and the size label) changes.
+        // Measure first, then stop the hosting view from resizing the panel afterwards
+        // (with no sizing options it reports a zero fitting size).
+        var size = hosting.fittingSize
+        if size.width < 100 || size.height < 40 { size = NSSize(width: 860, height: 76) }
         hosting.sizingOptions = []
-        let size = hosting.fittingSize
         hosting.frame = NSRect(origin: .zero, size: size)
 
         let panel = NSPanel(
@@ -123,6 +126,10 @@ final class AllInOneController {
     private func choose(_ choice: Choice) {
         guard let screen, let rect = targetRect else { return }
         dismiss()
+        if choice == .settings {
+            onChoice?(choice, screen, rect)
+            return
+        }
         // Let the overlay and toolbar leave the screen before capturing.
         runAfter(0.15) { [weak self] in
             self?.onChoice?(choice, screen, rect)
@@ -376,6 +383,8 @@ private final class AllInOneOverlayView: NSView {
             case "r": onChoice?(.record)
             case "t": onChoice?(.copyText)
             case "p": onChoice?(.pin)
+            case "c": onChoice?(.pickColor)
+            case ",": onChoice?(.settings)
             default: super.keyDown(with: event)
             }
         }
@@ -399,13 +408,14 @@ private struct AllInOneToolbar: View {
                 ToolbarAction(symbol: "record.circle", title: "Record", key: "R", symbolColor: .red) { choose(.record) }
                 ToolbarAction(symbol: "text.viewfinder", title: "Copy Text", key: "T") { choose(.copyText) }
                 ToolbarAction(symbol: "pin", title: "Pin", key: "P") { choose(.pin) }
+                ToolbarAction(symbol: "eyedropper", title: "Color", key: "C") { choose(.pickColor) }
 
                 Divider()
                     .frame(height: 22)
                     .padding(.horizontal, 6)
 
                 HStack(spacing: 5) {
-                    Image(systemName: state.hasSelection ? "selection.pin.in.out" : "display")
+                    Image(systemName: state.hasSelection ? "rectangle.dashed" : "display")
                         .font(.system(size: 11, weight: .medium))
                     Text(state.sizeLabel)
                         .font(.system(size: 12, weight: .medium).monospacedDigit())
@@ -416,7 +426,8 @@ private struct AllInOneToolbar: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(state.hasSelection ? "Selection \(state.sizeLabel)" : "Full screen")
 
-                CloseButton(action: cancel)
+                CircleButton(symbol: "gearshape", help: "Marquee Settings (,)") { choose(.settings) }
+                CircleButton(symbol: "xmark", help: "Cancel (Esc)", action: cancel)
             }
             .padding(6)
             .glassSurface(Capsule())
@@ -444,7 +455,7 @@ private struct ToolbarAction: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(prominent ? Color.black.opacity(0.85) : (symbolColor ?? .primary))
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 12.5, weight: .semibold))
                 Text(key)
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .padding(.horizontal, 5)
@@ -474,14 +485,16 @@ private struct ToolbarAction: View {
     }
 }
 
-private struct CloseButton: View {
+private struct CircleButton: View {
+    let symbol: String
+    let help: String
     let action: () -> Void
     @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "xmark")
-                .font(.system(size: 11, weight: .bold))
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .frame(width: 32, height: 32)
                 .background(Circle().fill(Color.primary.opacity(hovering ? 0.12 : 0.06)))
@@ -489,7 +502,7 @@ private struct CloseButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .help("Cancel (Esc)")
-        .accessibilityLabel("Cancel")
+        .help(help)
+        .accessibilityLabel(help)
     }
 }

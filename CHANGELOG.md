@@ -4,6 +4,12 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Fixed
+- The All-in-One toolbar didn't appear in 0.5.2, so only the selection showed.
+
+### Added
+- All-in-One toolbar: **Color** (C) picks a color, and a gear (,) opens Settings.
+
 ## 0.5.2 — 2026-10-15
 
 ### Fixed

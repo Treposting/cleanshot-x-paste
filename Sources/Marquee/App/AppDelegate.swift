@@ -235,6 +235,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         case .record:
             RecordingController.shared.prepare(screen: screen, rect: rect)
+        case .pickColor:
+            ColorPickerController.shared.pick()
+        case .settings:
+            WindowManager.shared.showMain(.settings)
         }
     }
 
