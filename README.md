@@ -226,7 +226,7 @@ From macOS 15.4, macOS can ask before, or block, apps that read the clipboard in
 <details>
 <summary><b>macOS asks for permissions again after an update</b></summary>
 
-macOS ties permissions to how an app is signed. Releases are signed ad hoc unless the maintainer has set up a stable certificate, and then every update looks like a new app. Grant the permissions again, or see [docs/SIGNING.md](docs/SIGNING.md) for the one-time setup that fixes it.
+macOS ties permissions to how an app is signed. Older releases were signed ad hoc, so every update looked like a new app. Releases are now signed with one stable certificate, so after granting them once more they stay. If a switch is on in System Settings but Marquee still shows the permission as missing, open **Permissions** in the Marquee window and click **Fix Permissions**, then **Restart Marquee**. Maintainers: see [docs/SIGNING.md](docs/SIGNING.md).
 </details>
 
 <details>

@@ -6,7 +6,7 @@ Signing every release with one stable certificate fixes that. A self-signed cert
 
 ## Set it up once
 
-1. On your Mac, run:
+1. Run (on a Mac or Linux, anywhere with `openssl`):
    ```sh
    ./scripts/create-signing-cert.sh
    ```
@@ -21,7 +21,7 @@ Signing every release with one stable certificate fixes that. A self-signed cert
 
 3. Keep `marquee-signing.p12` somewhere safe and private. If you lose it, users have to grant permissions once more when you switch to a new certificate.
 
-The next run of **Actions → Release** signs the app with this certificate.
+The next run of **Actions → Release** signs the app with this certificate. A self-signed certificate isn't trusted by macOS, so the workflow signs by the certificate's SHA-1 hash, and it fails the release if the app still comes out ad-hoc signed. CI checks on every push that self-signed signing works.
 
 ## How it interacts with in-app updates
 

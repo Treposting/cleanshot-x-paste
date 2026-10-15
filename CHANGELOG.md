@@ -4,6 +4,12 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Fixed
+- **Permissions survive updates** once releases are signed with the project's certificate (one more re-grant when moving from an ad-hoc build). Release signing now works with a self-signed certificate, and a release fails instead of quietly falling back to ad-hoc signing.
+
+### Added
+- Permissions page: **Fix Permissions** clears stale entries from older versions and asks again, and **Restart Marquee** applies Screen Recording.
+
 ## 0.5.3 — 2026-10-15
 
 ### Fixed
