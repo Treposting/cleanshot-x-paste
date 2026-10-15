@@ -31,9 +31,9 @@ cp "$BIN_DIR/Marquee" "$APP/Contents/MacOS/Marquee"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
 # App icon (generated, so there are no binary assets in the repo).
-if [[ ! -f build/AppIcon.icns || ! -d build/Icon.xcassets ]]; then
-  rm -rf build/AppIcon.iconset build/Icon.xcassets build/AppIcon.icns
-  if swift scripts/make-icon.swift build/AppIcon.iconset build/Icon.xcassets && iconutil -c icns build/AppIcon.iconset -o build/AppIcon.icns; then
+if [[ ! -f build/AppIcon.icns || ! -d build/AppIcon.icon ]]; then
+  rm -rf build/AppIcon.iconset build/AppIcon.icon build/AppIcon.icns
+  if swift scripts/make-icon.swift build/AppIcon.iconset build/AppIcon.icon && iconutil -c icns build/AppIcon.iconset -o build/AppIcon.icns; then
     :
   else
     echo "warning: could not generate the app icon" >&2
@@ -41,21 +41,21 @@ if [[ ! -f build/AppIcon.icns || ! -d build/Icon.xcassets ]]; then
 fi
 [[ -f build/AppIcon.icns ]] && cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-# Asset catalog with the dark-mode icon (macOS 26+ picks it automatically). It also
-# writes AppIcon.icns, which older macOS versions use.
-if [[ -d build/Icon.xcassets ]]; then
-  if xcrun actool build/Icon.xcassets --compile "$APP/Contents/Resources" \
+# Icon Composer icon with the dark-mode variant (macOS 26+ picks it automatically).
+# Older macOS versions use AppIcon.icns.
+if [[ -d build/AppIcon.icon ]]; then
+  if xcrun actool build/AppIcon.icon --compile "$APP/Contents/Resources" \
       --platform macosx --minimum-deployment-target 13.0 --app-icon AppIcon \
       --output-partial-info-plist build/icon-info.plist --errors --warnings; then
     /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$APP/Contents/Info.plist" 2>/dev/null \
       || /usr/libexec/PlistBuddy -c "Set :CFBundleIconName AppIcon" "$APP/Contents/Info.plist"
     if [[ -n "${CI:-}" ]]; then
       echo "Icon renditions:"
-      xcrun assetutil --info "$APP/Contents/Resources/Assets.car" | grep -E '"(Appearance|RenditionName)"' | sort | uniq -c || true
+      xcrun assetutil --info "$APP/Contents/Resources/Assets.car" | grep -E '"(Appearance|RenditionName|Name)"' | sort | uniq -c || true
+      ls -la "$APP/Contents/Resources" 
     fi
   else
     echo "warning: actool failed; using the light icon only" >&2
-    cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
   fi
 fi
 
