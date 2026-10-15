@@ -17,5 +17,14 @@ for path in CommandLine.arguments.dropFirst() {
     // Above the marks (background), and the center of the filled square (mark).
     let background = rep.colorAt(x: w / 2, y: h * 150 / 512)
     let mark = rep.colorAt(x: w / 2, y: h / 2)
-    print("\((path as NSString).lastPathComponent): background \(hex(background))  mark \(hex(mark))")
+    print("\((path as NSString).lastPathComponent) \(w)×\(h): background \(hex(background))  mark \(hex(mark))")
+    // A coarse 8×8 grid, to see the whole icon in the log.
+    for row in 0..<8 {
+        let line = (0..<8).map { col -> String in
+            let c = rep.colorAt(x: (col * 2 + 1) * w / 16, y: (row * 2 + 1) * h / 16)
+            let alpha = c?.alphaComponent ?? 0
+            return alpha < 0.1 ? "   ----" : " " + hex(c)
+        }.joined()
+        print(line)
+    }
 }
