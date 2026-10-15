@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.2 — 2026-10-15
+
 ### Fixed
 - All-in-One could crash as soon as you started dragging a selection.
 
