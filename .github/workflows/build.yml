@@ -30,6 +30,27 @@ jobs:
         run: swift test
       - name: Build universal app and DMG
         run: ./scripts/make-dmg.sh
+      # Releases are signed with a self-signed certificate (docs/SIGNING.md) so macOS keeps
+      # permissions across updates. Check that such a certificate signs a copy of the app.
+      - name: Check self-signed code signing
+        run: |
+          set -euo pipefail
+          T="$RUNNER_TEMP/selfsign"; mkdir -p "$T"
+          printf '[req]\ndistinguished_name=dn\nx509_extensions=ext\nprompt=no\n[dn]\nCN=Marquee CI Test\n[ext]\nbasicConstraints=critical,CA:false\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=critical,codeSigning\n' > "$T/cert.cnf"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 2 -keyout "$T/key.pem" -out "$T/cert.pem" -config "$T/cert.cnf" 2>/dev/null
+          LEGACY=""; if openssl pkcs12 -help 2>&1 | grep -q -- "-legacy"; then LEGACY="-legacy"; fi
+          openssl pkcs12 -export $LEGACY -inkey "$T/key.pem" -in "$T/cert.pem" -name "Marquee CI Test" -out "$T/cert.p12" -passout pass:test
+          KC="$T/test.keychain-db"
+          security create-keychain -p "" "$KC"
+          security unlock-keychain -p "" "$KC"
+          security import "$T/cert.p12" -k "$KC" -P test -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KC" >/dev/null
+          cp -R build/Marquee.app "$T/Marquee.app"
+          codesign --force --keychain "$KC" --sign "Marquee CI Test" "$T/Marquee.app"
+          codesign --verify --strict "$T/Marquee.app"
+          codesign -dr - "$T/Marquee.app" 2>&1 | tail -1
+          codesign -dr - "$T/Marquee.app" 2>&1 | grep -q "certificate leaf"
+          security delete-keychain "$KC"
       - name: Preview the app icon in light and dark mode
         run: |
           ICTOOL="$(xcode-select -p)/../Applications/Icon Composer.app/Contents/Executables/ictool"

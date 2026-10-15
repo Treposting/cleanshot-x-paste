@@ -46,6 +46,37 @@ final class PermissionsModel: ObservableObject {
         refresh()
     }
 
+    /// macOS keeps permission entries from earlier builds. When those were signed differently
+    /// (ad-hoc builds before releases had a stable certificate), the switch in System Settings
+    /// is on but doesn't apply to this build. Removing Marquee's entries lets macOS ask again.
+    func repair() {
+        let bundleID = Bundle.main.bundleIdentifier ?? "io.github.treposting.marquee"
+        var services: [String] = []
+        if !screenRecording { services.append("ScreenCapture") }
+        if !accessibility { services.append("Accessibility") }
+        if microphone == .denied { services.append("Microphone") }
+        for service in services {
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+            task.arguments = ["reset", service, bundleID]
+            try? task.run()
+            task.waitUntilExit()
+        }
+        if !screenRecording { _ = CGRequestScreenCaptureAccess() }
+        if !accessibility { Paster.requestAccess() }
+        refresh()
+    }
+
+    /// Screen Recording only takes effect after Marquee restarts.
+    static func relaunch() {
+        let path = Bundle.main.bundlePath
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 1; /usr/bin/open \"$0\"", path]
+        try? task.run()
+        NSApp.terminate(nil)
+    }
+
     static func openPrivacyPane(_ anchor: String) {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)") {
             NSWorkspace.shared.open(url)
@@ -93,11 +124,49 @@ struct PermissionsList: View {
                 buttonTitle: "Open Settings",
                 action: { PasteboardAccess.openPrivacySettings() }
             )
+            if !model.screenRecording || !model.accessibility {
+                RepairCard(model: model)
+            }
         }
         .onReceive(poll) { _ in model.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.refresh()
         }
+    }
+}
+
+/// Help for the common case: the switch is on in System Settings, but Marquee still asks.
+@MainActor
+private struct RepairCard: View {
+    @ObservedObject var model: PermissionsModel
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            Image(systemName: "wrench.and.screwdriver")
+                .font(.system(size: 17, weight: .medium))
+                .frame(width: 36, height: 36)
+                .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Already allowed, but still shown as missing?")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("macOS may be holding an entry from an older version of Marquee. Fix Permissions removes it and asks again: turn Marquee on, then restart it. Screen Recording always needs a restart.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 12)
+            VStack(spacing: 6) {
+                Button("Fix Permissions") { model.repair() }
+                    .glassButtonStyle(prominent: true)
+                Button("Restart Marquee") { PermissionsModel.relaunch() }
+                    .glassButtonStyle()
+            }
+            .controlSize(.regular)
+            .fixedSize()
+        }
+        .padding(14)
+        .background(Color.accentColor.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.accentColor.opacity(0.25)))
     }
 }
 

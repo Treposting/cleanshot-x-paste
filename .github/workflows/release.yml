@@ -108,6 +108,14 @@ jobs:
       - name: Build universal app, DMG and update zip
         run: ./scripts/make-dmg.sh
 
+      - name: Check the signature
+        run: |
+          codesign -dvv build/Marquee.app 2>&1 | grep -E "^(Authority|Signature|TeamIdentifier)" || true
+          codesign -dr - build/Marquee.app 2>&1 | tail -1
+          if [[ -n "${SIGN_IDENTITY:-}" ]] && codesign -dvv build/Marquee.app 2>&1 | grep -q "Signature=adhoc"; then
+            echo "::error::A signing certificate is configured, but the app was signed ad hoc."
+            exit 1
+          fi
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
