@@ -4,6 +4,10 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Changed
+- **All-in-One** shows its toolbar right away and works on the whole screen until you select an area. The selection stays editable: drag elsewhere for a new one, drag inside to move it, drag a handle to resize, arrow keys to nudge, ⌫ to go back to the whole screen.
+- **Dark-mode app icon**: a graphite tile with yellow marks on macOS 26 and later, instead of a darkened yellow tile. The website logo follows dark mode too.
+
 ## 0.5.0 — 2026-10-15
 
 ### Added

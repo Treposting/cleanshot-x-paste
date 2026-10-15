@@ -1,11 +1,17 @@
-// Renders the app icon into an .iconset folder (then `iconutil -c icns`).
-// Usage: swift scripts/make-icon.swift build/AppIcon.iconset
+// Renders the app icon.
+//
+//   swift scripts/make-icon.swift build/AppIcon.iconset [build/Icon.xcassets]
+//
+// The .iconset (light icon only) becomes AppIcon.icns with `iconutil -c icns`. The optional
+// asset catalog also has a dark variant: a graphite tile with yellow marks, which macOS 26+
+// shows in dark mode instead of darkening the yellow tile. Compile it with `actool`.
 import AppKit
 
-let outDir = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "AppIcon.iconset")
+let args = CommandLine.arguments
+let outDir = URL(fileURLWithPath: args.count > 1 ? args[1] : "AppIcon.iconset")
 try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 
-func render(_ pixels: Int) -> Data {
+func render(_ pixels: Int, dark: Bool = false) -> Data {
     let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -23,9 +29,22 @@ func render(_ pixels: Int) -> Data {
     let yellow = NSColor(calibratedRed: 0xFF / 255, green: 0xCF / 255, blue: 0x1A / 255, alpha: 1)
     let ink = NSColor(calibratedRed: 0x1D / 255, green: 0x1D / 255, blue: 0x1F / 255, alpha: 1)
 
-    // Tile.
-    yellow.setFill()
-    NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 116, yRadius: 116).fill()
+    let tileShape = NSBezierPath(roundedRect: NSRect(x: 16, y: 16, width: 480, height: 480), xRadius: 116, yRadius: 116)
+    let mark: NSColor
+    if dark {
+        // Graphite tile, lit slightly from the top, with yellow marks.
+        let top = NSColor(calibratedRed: 0x34 / 255, green: 0x34 / 255, blue: 0x37 / 255, alpha: 1)
+        let bottom = NSColor(calibratedRed: 0x1A / 255, green: 0x1A / 255, blue: 0x1C / 255, alpha: 1)
+        NSGradient(starting: top, ending: bottom)!.draw(in: tileShape, angle: 90)
+        NSColor.white.withAlphaComponent(0.08).setStroke()
+        tileShape.lineWidth = 3
+        tileShape.stroke()
+        mark = yellow
+    } else {
+        yellow.setFill()
+        tileShape.fill()
+        mark = ink
+    }
 
     // Selection brackets (top-left and bottom-right).
     let brackets = NSBezierPath()
@@ -40,14 +59,14 @@ func render(_ pixels: Int) -> Data {
     brackets.line(to: NSPoint(x: 400, y: 384))
     brackets.appendArc(withCenter: NSPoint(x: 384, y: 384), radius: 16, startAngle: 0, endAngle: 90)
     brackets.line(to: NSPoint(x: 316, y: 400))
-    ink.setStroke()
+    mark.setStroke()
     brackets.stroke()
 
     // Copy / paste squares.
     let back = NSBezierPath(roundedRect: NSRect(x: 166, y: 166, width: 124, height: 124), xRadius: 20, yRadius: 20)
     back.lineWidth = 26
     back.stroke()
-    ink.setFill()
+    mark.setFill()
     NSBezierPath(roundedRect: NSRect(x: 222, y: 222, width: 124, height: 124), xRadius: 20, yRadius: 20).fill()
 
     NSGraphicsContext.restoreGraphicsState()
@@ -65,3 +84,30 @@ for (name, pixels) in sizes {
     try render(pixels).write(to: outDir.appendingPathComponent("\(name).png"))
 }
 print("Wrote \(outDir.path)")
+
+// Asset catalog with light and dark variants.
+if args.count > 2 {
+    let set = URL(fileURLWithPath: args[2]).appendingPathComponent("AppIcon.appiconset")
+    try FileManager.default.createDirectory(at: set, withIntermediateDirectories: true)
+    try Data(#"{ "info" : { "author" : "xcode", "version" : 1 } }"#.utf8)
+        .write(to: set.deletingLastPathComponent().appendingPathComponent("Contents.json"))
+
+    var images: [[String: Any]] = []
+    for point in [16, 32, 128, 256, 512] {
+        for scale in [1, 2] {
+            for dark in [false, true] {
+                let name = "icon_\(point)x\(point)\(scale == 2 ? "@2x" : "")\(dark ? "_dark" : "").png"
+                try render(point * scale, dark: dark).write(to: set.appendingPathComponent(name))
+                var entry: [String: Any] = [
+                    "idiom": "mac", "size": "\(point)x\(point)", "scale": "\(scale)x", "filename": name,
+                ]
+                if dark { entry["appearances"] = [["appearance": "luminosity", "value": "dark"]] }
+                images.append(entry)
+            }
+        }
+    }
+    let contents: [String: Any] = ["images": images, "info": ["author": "xcode", "version": 1]]
+    try JSONSerialization.data(withJSONObject: contents, options: [.prettyPrinted, .sortedKeys])
+        .write(to: set.appendingPathComponent("Contents.json"))
+    print("Wrote \(set.path)")
+}

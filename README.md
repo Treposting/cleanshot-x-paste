@@ -74,7 +74,12 @@ The first time you open Marquee, a short walkthrough sets up permissions and sho
 
 ### All-in-One
 
-Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and drag over an area. A toolbar under it offers **Screenshot** (↩), **Record** (R), **Copy Text** (T) and **Pin** (P).
+Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar appears right away: **Screenshot** (↩), **Record** (R), **Copy Text** (T) and **Pin** (P). Until you select an area, they apply to the whole screen.
+
+- **Drag** to select an area. The toolbar moves under it.
+- **Drag somewhere else** to replace the selection, **drag inside it** to move it, or **drag a handle** to resize it.
+- **Arrow keys** nudge it by a point (hold ⇧ for 10), and <kbd>⌫</kbd> goes back to the whole screen.
+- <kbd>Esc</kbd> or the shortcut again cancels.
 
 ### Capture
 
