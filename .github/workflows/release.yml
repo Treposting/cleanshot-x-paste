@@ -69,7 +69,35 @@ jobs:
           git commit -am "Release v$VERSION"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
-      - name: Build universal app and DMG
+      - name: Run tests
+        run: swift test
+
+      # Optional: sign with a stable certificate so macOS keeps Screen Recording and
+      # Accessibility permissions across updates. See docs/SIGNING.md. Without these
+      # secrets the build is signed ad hoc.
+      - name: Import signing certificate
+        env:
+          CERT_P12: ${{ secrets.MACOS_SIGNING_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_SIGNING_CERT_PASSWORD }}
+          CERT_NAME: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CERT_P12}" ]]; then
+            echo "No signing certificate configured; using ad-hoc signing."
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p "" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "" "$KEYCHAIN"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          echo "SIGN_IDENTITY=${CERT_NAME:-Marquee Code Signing}" >> "$GITHUB_ENV"
+
+      - name: Build universal app, DMG and update zip
         run: ./scripts/make-dmg.sh
 
       - name: Publish GitHub Release
@@ -80,7 +108,9 @@ jobs:
           target_commitish: ${{ github.ref_name }}
           prerelease: ${{ inputs.prerelease }}
           generate_release_notes: true
-          files: build/*.dmg
+          files: |
+            build/*.dmg
+            build/*.zip
           body: |
             ### Install
             1. Download **Marquee-${{ steps.version.outputs.version }}.dmg** below and drag Marquee into Applications.

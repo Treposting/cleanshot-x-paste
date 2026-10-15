@@ -30,7 +30,7 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 - [Privacy](#privacy)
 - [Build from source](#build-from-source)
 - [Troubleshooting](#troubleshooting)
-- [Coming next: Measure](#coming-next-measure)
+- [Updates](#updates)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -63,6 +63,13 @@ See all [releases](https://github.com/Treposting/marquee/releases).
 - **Computer audio** and **cursor**, each optional.
 - **Menu-bar timer.** The icon turns into a red stop button while you record.
 - **Save as GIF** from the overlay with one click.
+
+### Measure <sup>coming in 0.4 · macOS 14+</sup>
+
+- **Distances.** Point anywhere and see the distance to the nearest edge in every direction, like a designer's ruler.
+- **Snap to element.** Drag a box around a button, an icon or a block of text and it shrinks to the element's exact size.
+- **Keep, copy, capture.** Space keeps a measurement on screen, ⌘C copies `140 × 48`, and ⌘S sends the screen with your measurements to the Quick Access overlay.
+- **Points or pixels.** Sizes are in points; hold ⇧ to see pixels.
 
 ### Clipboard history
 
@@ -104,6 +111,7 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 | Copy text (OCR) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>2</kbd> |
 | Record area (press again to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>6</kbd> |
 | Record screen (press again to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>7</kbd> |
+| Measure (press again or Esc to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>M</kbd> |
 | Clipboard history | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd> |
 
 ### In the clipboard panel
@@ -127,6 +135,19 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 | <kbd>⌘</kbd><kbd>S</kbd> | Save as… |
 | <kbd>⌘</kbd><kbd>↩</kbd> | Done |
 
+### While measuring
+
+| Key | Action |
+|---|---|
+| Move the pointer | Distances to the nearest edges |
+| Drag | Snap to the element inside the box |
+| <kbd>Space</kbd> | Keep the current measurement on screen |
+| <kbd>⌫</kbd> | Clear kept measurements |
+| Hold <kbd>⇧</kbd> | Show pixels instead of points |
+| <kbd>⌘</kbd><kbd>C</kbd> | Copy the last measurement |
+| <kbd>⌘</kbd><kbd>S</kbd> | Capture the screen with measurements |
+| <kbd>Esc</kbd> | Stop measuring |
+
 ### When recording an area
 
 Drag to select. Press <kbd>↩</kbd> to record the whole screen instead, or <kbd>Esc</kbd> to cancel. To stop, click the red button in the menu bar or press the record shortcut again.
@@ -135,8 +156,9 @@ Drag to select. Press <kbd>↩</kbd> to record the whole screen instead, or <kbd
 
 | Tab | What you can change |
 |---|---|
-| Capture | Show the overlay, auto-hide it, copy and/or save after capture, save folder, shutter sound, window shadow, launch at login |
+| Capture | Show the overlay, auto-hide it, copy and/or save after capture, save folder, shutter sound, window shadow, launch at login, automatic update checks |
 | Recording | Frame rate, cursor, computer audio |
+| Measure | Edge-detection tolerance |
 | Clipboard | Turn history on or off, history size (100 to 5,000 items), paste directly into apps |
 | Shortcuts | Every global shortcut |
 
@@ -205,6 +227,12 @@ Marquee doesn't have Screen Recording permission yet. Open **System Settings →
 </details>
 
 <details>
+<summary><b>macOS asks for permissions again after an update</b></summary>
+
+macOS ties permissions to how an app is signed. Releases are signed ad hoc unless the maintainer has set up a stable certificate, and then every update looks like a new app. Grant the permissions again, or see [docs/SIGNING.md](docs/SIGNING.md) for the one-time setup that fixes it.
+</details>
+
+<details>
 <summary><b>macOS asks for permissions again after I rebuild</b></summary>
 
 Local builds are signed ad hoc, and macOS ties permissions to the signature. To keep permissions across rebuilds, sign with a stable identity, such as a self-signed certificate made in Keychain Access:
@@ -226,14 +254,13 @@ Marquee uses that shortcut for clipboard history by default. Change it in **Sett
 Another app may already own that key combination. Pick a different one in **Settings → Shortcuts**.
 </details>
 
-## Coming next: Measure
+## Updates
 
-A PixelSnap-style measuring tool:
-- point at anything on screen to see its distance to the surrounding edges;
-- drag around an element to snap to its exact size;
-- add guides to check alignment.
+From 0.4, Marquee updates itself:
+- **Checks:** once a day it asks GitHub whether a newer release exists. You can also choose **Check for Updates…** in the menu bar or Settings.
+- **Installs:** when one is available, you see the release notes. **Install Update** downloads it and checks that it's a genuine, correctly signed Marquee build. Then **Restart to Update** swaps it in and reopens the app.
 
-The design and milestones are in [docs/plans/MEASURE.md](docs/plans/MEASURE.md).
+Turn off automatic checks in **Settings → Capture → Updates**. Updates only ever come from [this repository's releases](https://github.com/Treposting/marquee/releases).
 
 ## Roadmap
 
@@ -242,7 +269,9 @@ The design and milestones are in [docs/plans/MEASURE.md](docs/plans/MEASURE.md).
 - [x] Screen recording with GIF export
 - [x] Customizable shortcuts
 - [x] Universal DMG and GitHub Releases
-- [ ] Measure: an on-screen ruler that snaps to the edges of UI elements and shows distances in points, like [PixelSnap](https://pixelsnap.com)
+- [x] Measure: distances, snap to element, keep, copy, capture
+- [x] In-app updates from GitHub Releases
+- [ ] Measure guides with arrow-key nudging, and multiple displays at once
 - [ ] Microphone audio and webcam overlay in recordings
 - [ ] Scrolling capture
 - [ ] Rich text (RTF/HTML) in clipboard history

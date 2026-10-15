@@ -8,11 +8,12 @@ struct SettingsView: View {
         TabView {
             CaptureSettings().tabItem { Label("Capture", systemImage: "camera.viewfinder") }
             RecordingSettings().tabItem { Label("Recording", systemImage: "record.circle") }
+            MeasureSettings().tabItem { Label("Measure", systemImage: "ruler") }
             ClipboardSettings().tabItem { Label("Clipboard", systemImage: "doc.on.clipboard") }
             ShortcutsSettings().tabItem { Label("Shortcuts", systemImage: "keyboard") }
         }
         .padding(20)
-        .frame(width: 560, height: 480)
+        .frame(width: 580, height: 540)
     }
 }
 
@@ -54,6 +55,7 @@ private struct CaptureSettings: View {
                 }
                 LaunchAtLoginToggle()
             }
+            UpdatesSection()
         }
         .formStyle(.grouped)
     }
@@ -131,6 +133,79 @@ private struct ClipboardSettings: View {
         }
         .formStyle(.grouped)
         .onAppear { trusted = Paster.isTrusted }
+    }
+}
+
+@MainActor
+private struct UpdatesSection: View {
+    @AppStorage(Preferences.Key.autoCheckUpdates.rawValue) private var autoCheck = true
+    @ObservedObject private var updater = Updater.shared
+
+    var body: some View {
+        Section("Updates") {
+            Toggle("Check for updates automatically", isOn: $autoCheck)
+            HStack {
+                Text("Version \(updater.currentVersion)")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button(updater.isReadyToInstall ? "Restart to Update" : "Check Now") {
+                    if updater.isReadyToInstall {
+                        updater.restartToUpdate()
+                    } else {
+                        updater.check(userInitiated: true)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@MainActor
+private struct MeasureSettings: View {
+    @AppStorage(Preferences.Key.measureTolerance.rawValue) private var tolerance = 12
+
+    private struct KeyRow: Identifiable {
+        let action: String
+        let keys: String
+        var id: String { action }
+    }
+
+    private let keys: [KeyRow] = [
+        KeyRow(action: "Distances to the nearest edges", keys: "Move the pointer"),
+        KeyRow(action: "Snap to an element", keys: "Drag around it"),
+        KeyRow(action: "Keep a measurement on screen", keys: "Space"),
+        KeyRow(action: "Clear kept measurements", keys: "⌫"),
+        KeyRow(action: "Show pixels instead of points", keys: "Hold ⇧"),
+        KeyRow(action: "Copy the last measurement", keys: "⌘C"),
+        KeyRow(action: "Capture the screen with measurements", keys: "⌘S"),
+        KeyRow(action: "Stop measuring", keys: "Esc"),
+    ]
+
+    var body: some View {
+        Form {
+            Section("Edge detection") {
+                Slider(value: Binding(get: { Double(tolerance) }, set: { tolerance = Int($0.rounded()) }),
+                       in: 0...48, step: 1) {
+                    Text("Tolerance")
+                }
+                Text("\(tolerance). Raise it to ignore soft shadows and smoothed edges; lower it to stop at the faintest line.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("While measuring") {
+                ForEach(keys) { row in
+                    HStack {
+                        Text(row.action)
+                        Spacer()
+                        Text(row.keys).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            Text("Measure needs macOS 14 Sonoma or later.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .formStyle(.grouped)
     }
 }
 

@@ -28,6 +28,12 @@ for attempt in 1 2 3; do
   sleep 5
 done
 
+# Zip of the app for in-app updates (Updater downloads Marquee-<version>.zip).
+ZIP="build/Marquee-${VERSION}.zip"
+rm -f "$ZIP"
+ditto -c -k --keepParent build/Marquee.app "$ZIP"
+echo "Created $ZIP"
+
 if [[ "${SIGN_IDENTITY:--}" != "-" ]]; then
   codesign --force --sign "$SIGN_IDENTITY" "$DMG"
 fi

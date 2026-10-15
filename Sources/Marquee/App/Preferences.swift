@@ -16,6 +16,9 @@ enum Preferences {
         case recordFPS
         case recordShowCursor
         case recordAudio
+        case measureTolerance
+        case autoCheckUpdates
+        case skippedVersion
     }
 
     static var defaults: UserDefaults { .standard }
@@ -52,6 +55,8 @@ enum Preferences {
             Key.recordFPS.rawValue: 30,
             Key.recordShowCursor.rawValue: true,
             Key.recordAudio.rawValue: false,
+            Key.measureTolerance.rawValue: 12,
+            Key.autoCheckUpdates.rawValue: true,
         ])
     }
 
@@ -67,6 +72,14 @@ enum Preferences {
     static var recordFPS: Int { defaults.integer(forKey: Key.recordFPS.rawValue) == 60 ? 60 : 30 }
     static var recordShowCursor: Bool { defaults.bool(forKey: Key.recordShowCursor.rawValue) }
     static var recordAudio: Bool { defaults.bool(forKey: Key.recordAudio.rawValue) }
+
+    static var measureTolerance: Int { min(max(0, defaults.integer(forKey: Key.measureTolerance.rawValue)), 64) }
+    static var autoCheckUpdates: Bool { defaults.bool(forKey: Key.autoCheckUpdates.rawValue) }
+
+    static var skippedVersion: String? {
+        get { defaults.string(forKey: Key.skippedVersion.rawValue) }
+        set { defaults.set(newValue, forKey: Key.skippedVersion.rawValue) }
+    }
 
     static var monitorPaused: Bool {
         get { defaults.bool(forKey: Key.monitorPaused.rawValue) }

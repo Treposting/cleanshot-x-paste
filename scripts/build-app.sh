@@ -41,6 +41,9 @@ if [[ ! -f build/AppIcon.icns ]]; then
 fi
 [[ -f build/AppIcon.icns ]] && cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
-codesign --force --sign "$SIGN_IDENTITY" "$APP"
+if ! codesign --force --sign "$SIGN_IDENTITY" "$APP"; then
+  echo "warning: signing with '$SIGN_IDENTITY' failed; falling back to ad-hoc signing" >&2
+  codesign --force --sign - "$APP"
+fi
 
 echo "Built $APP"

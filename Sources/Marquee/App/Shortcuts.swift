@@ -77,6 +77,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case captureText
     case recordArea
     case recordScreen
+    case measure
     case clipboardHistory
 
     var id: String { rawValue }
@@ -90,6 +91,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureText: return "Capture Text (OCR)"
         case .recordArea: return "Record Area"
         case .recordScreen: return "Record Screen"
+        case .measure: return "Measure"
         case .clipboardHistory: return "Clipboard History"
         }
     }
@@ -104,6 +106,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureText: return KeyCombo(keyCode: kVK_ANSI_2, modifiers: optShiftCmd)
         case .recordArea: return KeyCombo(keyCode: kVK_ANSI_6, modifiers: optShiftCmd)
         case .recordScreen: return KeyCombo(keyCode: kVK_ANSI_7, modifiers: optShiftCmd)
+        case .measure: return KeyCombo(keyCode: kVK_ANSI_M, modifiers: optShiftCmd)
         case .clipboardHistory: return KeyCombo(keyCode: kVK_ANSI_V, modifiers: cmdKey | shiftKey)
         }
     }

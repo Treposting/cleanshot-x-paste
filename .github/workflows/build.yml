@@ -18,6 +18,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Swift version
         run: swift --version
+      - name: Run tests
+        run: swift test
       - name: Build universal app and DMG
         run: ./scripts/make-dmg.sh
       - uses: actions/upload-artifact@v4

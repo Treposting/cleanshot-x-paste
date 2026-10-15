@@ -1,6 +1,8 @@
 # Plan: Measure (PixelSnap-style screen ruler)
 
-Status: **planning**. Nothing here is built yet.
+Status: **milestones 1–3 built** on `main` (distances, snap, keep/copy/capture). Guides (milestone 4) and multi-display measuring are next.
+
+Decisions taken: the shortcut toggles measure mode; the screen is frozen; values are in points (hold ⇧ for pixels); the default shortcut is ⌥⇧⌘M; Measure requires macOS 14 because it uses `SCScreenshotManager`.
 
 ## Goal
 

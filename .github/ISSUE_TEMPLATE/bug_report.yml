@@ -1,0 +1,39 @@
+name: Bug report
+description: Something in Marquee doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Press ⌥⇧⌘4
+        2. Drag over a window
+        3. …
+  - type: input
+    id: version
+    attributes:
+      label: Marquee version
+      description: Shown in Settings → Capture → Updates
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac
+      placeholder: "macOS 15.1, MacBook Air M2"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Optional. Console.app messages starting with "Marquee:" are especially helpful.

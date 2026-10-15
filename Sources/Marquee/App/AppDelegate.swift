@@ -23,6 +23,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observeShortcutChanges()
         monitor.start()
         recorder.onUnexpectedStop = { [weak self] in self?.stopRecording() }
+        Updater.shared.onStateChange = { [weak self] in self?.rebuildMenu() }
+        Updater.shared.startAutomaticChecks()
     }
 
     // MARK: - Hotkeys
@@ -61,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .captureText: capture(.text)
         case .recordArea: toggleRecording(selectArea: true)
         case .recordScreen: toggleRecording(selectArea: false)
+        case .measure: MeasureController.shared.toggle()
         case .clipboardHistory: historyPanel.toggle()
         }
     }
@@ -86,6 +89,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(actionItem(.recordArea))
         menu.addItem(actionItem(.recordScreen))
         menu.addItem(.separator())
+        menu.addItem(actionItem(.measure))
+        menu.addItem(.separator())
         menu.addItem(actionItem(.clipboardHistory))
         let pause = item(pauseTitle, #selector(togglePause))
         pauseItem = pause
@@ -94,6 +99,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         menu.addItem(item("Open Screenshots Folder", #selector(openFolder)))
         menu.addItem(item("Settings…", #selector(openSettings), key: ","))
+        if Updater.shared.isReadyToInstall {
+            menu.addItem(item("Restart to Update", #selector(restartToUpdate)))
+        } else {
+            menu.addItem(item("Check for Updates…", #selector(checkForUpdates)))
+        }
         menu.addItem(.separator())
         menu.addItem(item("Quit Marquee", #selector(quit), key: "q"))
         mainMenu = menu
@@ -153,7 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openSettings() {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 560, height: 480),
+                contentRect: NSRect(x: 0, y: 0, width: 620, height: 580),
                 styleMask: [.titled, .closable],
                 backing: .buffered, defer: false
             )
@@ -168,11 +178,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
+    @objc private func checkForUpdates() { Updater.shared.check(userInitiated: true) }
+    @objc private func restartToUpdate() { Updater.shared.restartToUpdate() }
 
     // MARK: - Screenshot flow
 
     private func capture(_ mode: CaptureMode) {
-        guard !recorder.isRecording else { return }
+        guard !recorder.isRecording, !MeasureController.shared.isActive else { return }
         captureService.capture(mode) { [weak self] url in
             guard let self, let url else { return }
             if mode == .text {

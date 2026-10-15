@@ -51,3 +51,23 @@ This project is a **clean-room reimplementation**. We did not decompile, disasse
 ## Why the two fit together
 
 A screenshot copied by the capture side lands on the pasteboard. The history side then records it like any other copy, so every screenshot you took is also one ⇧⌘V away.
+
+## In-app updates
+
+| Step | API | Marquee |
+|---|---|---|
+| Find the latest version | GitHub REST API `GET /repos/Treposting/marquee/releases/latest` | `Update/Updater.swift` |
+| Compare versions | Numeric comparison of `CFBundleShortVersionString` and the release tag | `Update/AppVersion.swift` |
+| Download | `URLSession` download task with progress | `UpdateDownloader` |
+| Verify | `ditto` to unzip; bundle ID and version must match; `SecStaticCodeCheckValidity`, plus the running app's designated requirement when it isn't ad-hoc signed | `UpdateInstaller` |
+| Install | A small shell helper waits for Marquee to quit, swaps the bundle, and reopens it | `UpdateInstaller.replaceAndRelaunch` |
+
+## Measure
+
+| Step | API | Marquee |
+|---|---|---|
+| Freeze the screen | `SCScreenshotManager.captureImage` (macOS 14) | `Measure/ScreenSnapshot.swift` |
+| Read pixels | Draw the `CGImage` into an RGBA `CGContext` | `PixelBuffer` |
+| Find edges | Walk from the pointer until the color changes beyond a tolerance; snap by trimming the background color | `Measure/EdgeFinder.swift` (unit tested) |
+| Draw | Core Animation layers over the frozen image | `Measure/MeasureView.swift` |
+
