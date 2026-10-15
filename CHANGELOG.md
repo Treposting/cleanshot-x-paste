@@ -4,6 +4,13 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Fixed
+- All-in-One could crash as soon as you started dragging a selection.
+
+### Changed
+- **All-in-One toolbar** redesigned as a Liquid Glass bar that follows light and dark mode, with Screenshot as the default action and key hints on every button.
+- **Shortcuts** are grouped into Capture, Record, Tools and Clipboard. Only All-in-One (⌥⇧⌘A) and Clipboard History (⇧⌘V) are set by default; add the others you want in Settings or during onboarding.
+
 ## 0.5.1 — 2026-10-15
 
 ### Changed

@@ -42,7 +42,7 @@ struct ShortcutRecorder: View {
 
     private var label: String {
         if isRecording { return "Press shortcut…" }
-        return combo?.displayString ?? "None"
+        return combo?.displayString ?? "Record Shortcut"
     }
 
     private func toggle() {

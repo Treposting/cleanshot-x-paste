@@ -40,7 +40,8 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 - **The Marquee window.** Every action, your capture library, clipboard history, picked colors, permissions and settings, in one app. The menu bar keeps the shortcuts you use most.
 - **Onboarding.** A short walkthrough on first launch sets up permissions and shows the key shortcuts.
 - **All-in-One** (⌥⇧⌘A). Select an area, then screenshot, record, copy text or pin from one toolbar.
-- **Color picker** (⌥⇧⌘C). Copy any on-screen color as HEX, RGB, HSL or SwiftUI.
+- **Shortcuts you choose.** Only All-in-One and Clipboard History have shortcuts by default; add the rest yourself.
+- **Color picker.** Copy any on-screen color as HEX, RGB, HSL or SwiftUI.
 
 **0.4**
 - **Measure.** A PixelSnap-style ruler: distances, snap to element, keep, copy, capture.
@@ -107,7 +108,7 @@ Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar app
 
 ### Color picker
 
-- **Any pixel.** Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd>, click anywhere on screen, and the color is copied.
+- **Any pixel.** Choose **Pick Color** (from the menu bar, the Marquee window, or a shortcut you set), click anywhere on screen, and the color is copied.
 - **Your format.** HEX (`#FFCF1A`), RGB, HSL or SwiftUI `Color(red:green:blue:)`. Choose it in **Colors**.
 - **History.** The last 48 colors are kept in **Colors**; click a swatch to copy it again.
 
@@ -141,21 +142,14 @@ Marquee runs on **macOS 13 Ventura through macOS 27 Golden Gate**. On macOS 26 a
 
 ### Global shortcuts
 
-You can change these in **Settings → Shortcuts**. Click a shortcut and press new keys, press ⌫ to remove it, or click ↺ to restore its default.
+Out of the box only two shortcuts are set: **All-in-One** (<kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd>), which reaches every capture, and **Clipboard History** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd>). Add a shortcut for anything else you use often in **Settings → Shortcuts**, where they're grouped into Capture, Record, Tools and Clipboard. Click **Record Shortcut** and press keys, press ⌫ to remove one, or click ↺ to restore its default. You can also pick them during onboarding.
 
-| Action | Default |
+| Category | Actions |
 |---|---|
-| All-in-One | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> |
-| Capture area | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>4</kbd> |
-| Capture window | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>5</kbd> |
-| Capture full screen | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>3</kbd> |
-| Capture full screen in 5 s | none |
-| Copy text (OCR) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>2</kbd> |
-| Record area (press again to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>6</kbd> |
-| Record screen (press again to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>7</kbd> |
-| Measure (press again or Esc to stop) | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>M</kbd> |
-| Pick color | <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd> |
-| Clipboard history | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd> |
+| Capture | All-in-One, Capture Area, Capture Window, Capture Full Screen, Capture Full Screen in 5 Seconds, Capture Text (OCR) |
+| Record | Record Area, Record Screen (press again to stop) |
+| Tools | Measure (press again or Esc to stop), Pick Color |
+| Clipboard | Clipboard History |
 
 ### In the clipboard panel
 

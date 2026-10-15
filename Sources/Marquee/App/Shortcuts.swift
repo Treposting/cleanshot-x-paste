@@ -100,20 +100,33 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         }
     }
 
-    var defaultCombo: KeyCombo? {
-        let optShiftCmd = cmdKey | shiftKey | optionKey
+    enum Category: String, CaseIterable, Identifiable {
+        case capture = "Capture"
+        case record = "Record"
+        case tools = "Tools"
+        case clipboard = "Clipboard"
+
+        var id: String { rawValue }
+
+        var actions: [ShortcutAction] { ShortcutAction.allCases.filter { $0.category == self } }
+    }
+
+    var category: Category {
         switch self {
-        case .allInOne: return KeyCombo(keyCode: kVK_ANSI_A, modifiers: optShiftCmd)
-        case .captureArea: return KeyCombo(keyCode: kVK_ANSI_4, modifiers: optShiftCmd)
-        case .captureWindow: return KeyCombo(keyCode: kVK_ANSI_5, modifiers: optShiftCmd)
-        case .captureFullscreen: return KeyCombo(keyCode: kVK_ANSI_3, modifiers: optShiftCmd)
-        case .captureTimed: return nil
-        case .captureText: return KeyCombo(keyCode: kVK_ANSI_2, modifiers: optShiftCmd)
-        case .recordArea: return KeyCombo(keyCode: kVK_ANSI_6, modifiers: optShiftCmd)
-        case .recordScreen: return KeyCombo(keyCode: kVK_ANSI_7, modifiers: optShiftCmd)
-        case .measure: return KeyCombo(keyCode: kVK_ANSI_M, modifiers: optShiftCmd)
-        case .pickColor: return KeyCombo(keyCode: kVK_ANSI_C, modifiers: optShiftCmd)
+        case .allInOne, .captureArea, .captureWindow, .captureFullscreen, .captureTimed, .captureText: return .capture
+        case .recordArea, .recordScreen: return .record
+        case .measure, .pickColor: return .tools
+        case .clipboardHistory: return .clipboard
+        }
+    }
+
+    /// Only the two entry points get a shortcut out of the box; everything else is reachable
+    /// from All-in-One, the menu bar and the Marquee window, and users add shortcuts they want.
+    var defaultCombo: KeyCombo? {
+        switch self {
+        case .allInOne: return KeyCombo(keyCode: kVK_ANSI_A, modifiers: cmdKey | shiftKey | optionKey)
         case .clipboardHistory: return KeyCombo(keyCode: kVK_ANSI_V, modifiers: cmdKey | shiftKey)
+        default: return nil
         }
     }
 }

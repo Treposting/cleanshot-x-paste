@@ -42,7 +42,11 @@ final class AllInOneController {
 
         let view = AllInOneOverlayView(frame: NSRect(origin: .zero, size: screen.frame.size))
         view.onSelectionChange = { [weak self] _ in self?.selectionChanged() }
-        view.onDragging = { [weak self] dragging in self?.toolbar?.alphaValue = dragging ? 0 : 1 }
+        view.onDragging = { [weak self] dragging in
+            // Hidden while dragging; moved and updated once the drag ends.
+            if !dragging { self?.selectionChanged() }
+            self?.toolbar?.alphaValue = dragging ? 0 : 1
+        }
         view.onChoice = { [weak self] choice in self?.choose(choice) }
         view.onCancel = { [weak self] in self?.dismiss() }
         window.contentView = view
@@ -58,7 +62,19 @@ final class AllInOneController {
     }
 
     private func showToolbar(on screen: NSScreen) {
-        let size = NSSize(width: 560, height: 92)
+        let hosting = FirstMouseHostingView(rootView:
+            AllInOneToolbar(state: state) { [weak self] choice in
+                self?.choose(choice)
+            } cancel: { [weak self] in
+                self?.dismiss()
+            }
+        )
+        // A fixed-size panel: the hosting view must not resize its window while the
+        // selection (and the size label) changes.
+        hosting.sizingOptions = []
+        let size = hosting.fittingSize
+        hosting.frame = NSRect(origin: .zero, size: size)
+
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -70,14 +86,7 @@ final class AllInOneController {
         panel.hasShadow = false
         panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.contentView = FirstMouseHostingView(rootView:
-            AllInOneToolbar(state: state) { [weak self] choice in
-                self?.choose(choice)
-            } cancel: { [weak self] in
-                self?.dismiss()
-            }
-            .frame(width: size.width, height: size.height)
-        )
+        panel.contentView = hosting
         panel.orderFrontRegardless()
         toolbar = panel
     }
@@ -99,13 +108,13 @@ final class AllInOneController {
         let visible = screen.visibleFrame
         var origin: NSPoint
         if let rect = targetRect, selection != nil {
-            origin = NSPoint(x: rect.midX - size.width / 2, y: rect.minY - size.height - 8)
+            origin = NSPoint(x: rect.midX - size.width / 2, y: rect.minY - size.height - 10)
             if origin.y < visible.minY + 8 {
                 // No room below: sit just inside the bottom of the selection, or above it.
                 origin.y = rect.maxY + 8 + size.height < visible.maxY ? rect.maxY + 8 : max(visible.minY + 8, rect.minY + 12)
             }
         } else {
-            origin = NSPoint(x: visible.midX - size.width / 2, y: visible.minY + 36)
+            origin = NSPoint(x: visible.midX - size.width / 2, y: visible.minY + 40)
         }
         origin.x = min(max(visible.minX + 8, origin.x), visible.maxX - size.width - 8)
         toolbar.setFrameOrigin(origin)
@@ -157,6 +166,8 @@ private final class AllInOneOverlayView: NSView {
     private(set) var selection: NSRect? {
         didSet {
             needsDisplay = true
+            // While dragging, cursor rects and the toolbar are updated once, when the drag ends.
+            guard drag == nil else { return }
             window?.invalidateCursorRects(for: self)
             onSelectionChange?(selection)
         }
@@ -228,8 +239,11 @@ private final class AllInOneOverlayView: NSView {
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: .crosshair)
-        guard let selection else { return }
-        addCursorRect(selection.insetBy(dx: 8, dy: 8), cursor: .openHand)
+        guard drag == nil, let selection, selection.width >= 1, selection.height >= 1 else { return }
+        // insetBy returns CGRect.null for small rects, which must never reach AppKit.
+        if selection.width > 24, selection.height > 24 {
+            addCursorRect(selection.insetBy(dx: 8, dy: 8), cursor: .openHand)
+        }
         for handle in Handle.allCases {
             let c = point(of: handle, in: selection)
             let cursor: NSCursor
@@ -327,21 +341,20 @@ private final class AllInOneOverlayView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        defer {
-            drag = nil
-            onDragging?(false)
-            needsDisplay = true
-        }
+        guard let ending = drag else { return }
         // A click or a tiny drag keeps the previous selection instead of losing it.
         if let current = selection, current.width < Self.minimumSize || current.height < Self.minimumSize {
-            switch drag {
+            switch ending {
             case .new(_, let previous): selection = previous
             case .move(_, let original), .resize(_, let original): selection = original
-            case nil: selection = nil
             }
         } else if let current = selection {
             selection = current.integral
         }
+        drag = nil
+        needsDisplay = true
+        window?.invalidateCursorRects(for: self)
+        onDragging?(false)
     }
 
     // MARK: Keyboard
@@ -371,7 +384,8 @@ private final class AllInOneOverlayView: NSView {
 
 // MARK: - Toolbar
 
-/// Large labeled buttons, like the capture HUD in pro screenshot tools.
+/// A Liquid Glass capsule in the style of the macOS 26/27 screenshot bar. It follows the
+/// system appearance; Screenshot is the default action (Return).
 @MainActor
 private struct AllInOneToolbar: View {
     @ObservedObject var state: AllInOneState
@@ -379,71 +393,103 @@ private struct AllInOneToolbar: View {
     let cancel: () -> Void
 
     var body: some View {
-        HStack(spacing: 6) {
-            HUDButton(symbol: "camera", title: "Screenshot", key: "↩") { choose(.screenshot) }
-            HUDButton(symbol: "record.circle", title: "Record", key: "R", tint: .red) { choose(.record) }
-            HUDButton(symbol: "text.viewfinder", title: "Copy Text", key: "T") { choose(.copyText) }
-            HUDButton(symbol: "pin", title: "Pin", key: "P") { choose(.pin) }
+        GlassGroup(spacing: 10) {
+            HStack(spacing: 4) {
+                ToolbarAction(symbol: "camera.viewfinder", title: "Screenshot", key: "↩", prominent: true) { choose(.screenshot) }
+                ToolbarAction(symbol: "record.circle", title: "Record", key: "R", symbolColor: .red) { choose(.record) }
+                ToolbarAction(symbol: "text.viewfinder", title: "Copy Text", key: "T") { choose(.copyText) }
+                ToolbarAction(symbol: "pin", title: "Pin", key: "P") { choose(.pin) }
 
-            Rectangle().fill(Color.white.opacity(0.14)).frame(width: 1, height: 44).padding(.horizontal, 4)
+                Divider()
+                    .frame(height: 22)
+                    .padding(.horizontal, 6)
 
-            VStack(spacing: 6) {
-                Text(state.sizeLabel)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundStyle(state.hasSelection ? Color(red: 1, green: 0.81, blue: 0.1) : .secondary)
-                    .lineLimit(1)
-                    .frame(width: 92)
-                Button(action: cancel) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .frame(width: 30, height: 30)
-                        .background(Circle().fill(Color.white.opacity(0.1)))
+                HStack(spacing: 5) {
+                    Image(systemName: state.hasSelection ? "selection.pin.in.out" : "display")
+                        .font(.system(size: 11, weight: .medium))
+                    Text(state.sizeLabel)
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .lineLimit(1)
                 }
-                .buttonStyle(.plain)
-                .help("Cancel (Esc)")
-                .accessibilityLabel("Cancel")
+                .foregroundStyle(.secondary)
+                .frame(width: 104)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(state.hasSelection ? "Selection \(state.sizeLabel)" : "Full screen")
+
+                CloseButton(action: cancel)
             }
+            .padding(6)
+            .glassSurface(Capsule())
         }
-        .padding(8)
-        .hudSurface()
-        .environment(\.colorScheme, .dark)
+        .padding(14) // room for the glass edge and shadow
         .fixedSize()
     }
 }
 
-private struct HUDButton: View {
+private struct ToolbarAction: View {
     let symbol: String
     let title: String
     let key: String
-    var tint: Color = .white
+    var prominent = false
+    var symbolColor: Color? = nil
+    let action: () -> Void
+    @State private var hovering = false
+
+    private static let yellow = Color(red: 1, green: 0.81, blue: 0.1)
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Image(systemName: symbol)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(prominent ? Color.black.opacity(0.85) : (symbolColor ?? .primary))
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(key)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 5)
+                    .frame(minWidth: 18, minHeight: 17)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(prominent ? Color.black.opacity(0.12) : Color.primary.opacity(0.08))
+                    )
+                    .opacity(0.8)
+            }
+            .foregroundStyle(prominent ? Color.black.opacity(0.85) : .primary)
+            .padding(.leading, 12)
+            .padding(.trailing, 9)
+            .frame(height: 38)
+            .background(
+                Capsule().fill(prominent
+                    ? Self.yellow.opacity(hovering ? 1 : 0.92)
+                    : Color.primary.opacity(hovering ? 0.09 : 0))
+            )
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .help("\(title) (\(key))")
+        .accessibilityLabel(title)
+    }
+}
+
+private struct CloseButton: View {
     let action: () -> Void
     @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 5) {
-                Image(systemName: symbol)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(tint)
-                Text(title).font(.system(size: 11, weight: .medium))
-            }
-            .frame(width: 84, height: 62)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(hovering ? 0.16 : 0.06))
-            )
-            .overlay(alignment: .topTrailing) {
-                Text(key)
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 5)
-                    .padding(.trailing, 7)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Image(systemName: "xmark")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.secondary)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(Color.primary.opacity(hovering ? 0.12 : 0.06)))
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .help("\(title) (\(key))")
-        .accessibilityLabel(title)
+        .help("Cancel (Esc)")
+        .accessibilityLabel("Cancel")
     }
 }

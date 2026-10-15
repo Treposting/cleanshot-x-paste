@@ -298,17 +298,22 @@ private struct RecordingSettings: View {
 private struct ShortcutsSettings: View {
     var body: some View {
         Form {
-            Section("Global shortcuts") {
-                ForEach(ShortcutAction.allCases) { action in
-                    HStack {
-                        Text(action.title)
-                        Spacer()
-                        ShortcutRecorder(action: action)
+            ForEach(ShortcutAction.Category.allCases) { category in
+                Section(category.rawValue) {
+                    ForEach(category.actions) { action in
+                        HStack(spacing: 10) {
+                            Image(systemName: action.symbol)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            Text(action.title)
+                            Spacer()
+                            ShortcutRecorder(action: action)
+                        }
                     }
                 }
             }
             HStack {
-                Text("Click a shortcut and press new keys. \u{232B} removes it.")
+                Text("Only All-in-One and Clipboard History have shortcuts at first. Click \u{201C}Record Shortcut\u{201D} to add one, \u{232B} to remove it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()

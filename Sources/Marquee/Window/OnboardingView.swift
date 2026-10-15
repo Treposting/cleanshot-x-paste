@@ -88,7 +88,7 @@ struct OnboardingView: View {
 
     private var shortcuts: some View {
         VStack(alignment: .leading, spacing: 16) {
-            PageTitle(title: "Shortcuts you'll use most", subtitle: "They work in every app. Change any of them in Settings → Shortcuts.")
+            PageTitle(title: "Pick your shortcuts", subtitle: "All-in-One does every capture from one shortcut. Add others only if you want them; you can change all of them later in Settings \u{2192} Shortcuts.")
             VStack(spacing: 6) {
                 ForEach([ShortcutAction.allInOne, .captureArea, .recordArea, .measure, .pickColor, .clipboardHistory]) { action in
                     HStack(spacing: 12) {
@@ -98,12 +98,10 @@ struct OnboardingView: View {
                             .foregroundStyle(Color.accentColor)
                         Text(action.title).font(.system(size: 13, weight: .medium))
                         Spacer()
-                        Text(ShortcutStore.combo(for: action)?.displayString ?? "Not set")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                        ShortcutRecorder(action: action)
                     }
                     .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
+                    .padding(.vertical, 6)
                     .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 }
             }
