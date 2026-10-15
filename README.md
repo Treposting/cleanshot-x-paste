@@ -23,7 +23,7 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 
 ## Contents
 
-- [What's new in 0.2](#whats-new-in-02)
+- [What's new](#whats-new)
 - [Features](#features)
 - [Install](#install)
 - [Using Marquee](#using-marquee)
@@ -35,10 +35,17 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 - [Contributing](#contributing)
 - [License](#license)
 
-## What's new in 0.2
+## What's new
 
-> **ShotPaste is now Marquee.** The app was renamed now that it covers capture, clipboard history and (soon) measuring. If you used ShotPaste 0.2.0, Marquee moves your clipboard history, settings and shortcuts over the first time it runs. macOS treats it as a new app, so it asks for Screen Recording and Accessibility again.
+**0.4**
+- **Measure.** A PixelSnap-style ruler: distances, snap to element, keep, copy, capture.
+- **Microphone and desktop audio** in recordings, chosen on a new recording toolbar with a live level meter.
+- **Countdown or instant start**, and a blinking timer in the menu bar while recording.
+- **In-app updates.** Future versions install from inside the app.
 
+**0.3**: **ShotPaste is now Marquee.** The app was renamed now that it covers capture, clipboard history and measuring. If you used ShotPaste 0.2.0, Marquee moves your clipboard history, settings and shortcuts over the first time it runs. macOS treats it as a new app, so it asks for Screen Recording and Accessibility again.
+
+**0.2**
 - **Screen recording.** Record an area or the full screen to MP4, then save it as a GIF.
 - **Custom shortcuts.** Change every global shortcut in Settings.
 - **DMG installer.** One universal download for Apple Silicon and Intel.
@@ -65,7 +72,7 @@ See all [releases](https://github.com/Treposting/marquee/releases).
 - **While recording:** a timer, the mic meter, Stop and Discard on the toolbar. The menu bar shows a blinking red dot with the elapsed time (`12s`, then `4:05`, then `1:04:05`); click it to stop. The cursor is optional.
 - **Save as GIF** from the overlay with one click.
 
-### Measure <sup>coming in 0.4 · macOS 14+</sup>
+### Measure <sup>macOS 14+</sup>
 
 - **Distances.** Point anywhere and see the distance to the nearest edge in every direction, like a designer's ruler.
 - **Snap to element.** Drag a box around a button, an icon or a block of text and it shrinks to the element's exact size.
@@ -260,7 +267,7 @@ Another app may already own that key combination. Pick a different one in **Sett
 
 ## Updates
 
-From 0.4, Marquee updates itself:
+Marquee updates itself (from version 0.4):
 - **Checks:** once a day it asks GitHub whether a newer release exists. You can also choose **Check for Updates…** in the menu bar or Settings.
 - **Installs:** when one is available, you see the release notes. **Install Update** downloads it and checks that it's a genuine, correctly signed Marquee build. Then **Restart to Update** swaps it in and reopens the app.
 

@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.4.0 — 2026-10-15
+
 ### Added
 - **Measure** (⌥⇧⌘M, macOS 14+): point anywhere to see distances to the nearest edges, drag to snap to an element's exact size, Space to keep measurements on screen, ⇧ for pixels, ⌘C to copy, ⌘S to capture the screen with measurements.
 - **Microphone recording**: pick any input (built-in, USB, Bluetooth) on the new recording toolbar, with a live level meter. Microphone and desktop audio can be recorded together and are mixed into one soundtrack.
