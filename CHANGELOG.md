@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.3 — 2026-10-15
+
 ### Fixed
 - The All-in-One toolbar didn't appear in 0.5.2, so only the selection showed.
 
