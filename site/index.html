@@ -250,6 +250,10 @@
     .sec-head .lede { font-size: 17px; }
     @media (max-width: 820px) { .sec-head { grid-template-columns: 1fr; } }
 
+    /* Demo video */
+    .demo { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #FFCF1A; aspect-ratio: 16 / 10; box-shadow: 0 30px 70px -30px rgba(29, 29, 31, .35); }
+    .demo video { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .demo-cap { margin-top: 14px; color: var(--muted); font-size: 14px; }
     /* Verb index */
     .verbs { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
     .verb {
@@ -361,6 +365,7 @@
     <div class="wrap">
       <a class="mark" href="#top"><img src="assets/logo.svg" alt="">Marquee</a>
       <nav>
+        <a class="opt" href="#demo">Demo</a>
         <a class="opt" href="#what">What it does</a>
         <a class="opt" href="#clipboard">Clipboard</a>
         <a class="opt" href="#install">Install</a>
@@ -397,6 +402,22 @@
         </div>
       </div>
     </div>
+
+    <section id="demo" aria-labelledby="demo-title">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 id="demo-title">See it in 24 seconds</h2>
+          <p class="lede">All-in-One, screenshots, recording with sound, Measure, the color picker and clipboard history, start to finish.</p>
+        </div>
+        <div class="demo">
+          <video id="demo-video" poster="assets/demo-poster.jpg" muted loop playsinline preload="metadata" aria-label="Marquee demo: All-in-One, screenshot, recording, measuring, color picking and clipboard history">
+            <source src="assets/demo.webm" type="video/webm">
+            <source src="assets/demo.mp4" type="video/mp4">
+          </video>
+        </div>
+        <p class="demo-cap">An illustration of the app's interface, made for this page.</p>
+      </div>
+    </section>
 
     <section id="what">
       <div class="wrap">
@@ -717,6 +738,15 @@
       numberRulers();
       (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(intro);
     })();
-  </script>
+  
+    // Demo video: play while visible, unless the visitor prefers reduced motion.
+    (() => {
+      const v = document.getElementById('demo-video');
+      if (!v) return;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { v.controls = true; return; }
+      const io = new IntersectionObserver(([e]) => { e.isIntersecting ? v.play().catch(() => { v.controls = true; }) : v.pause(); }, { threshold: .35 });
+      io.observe(v);
+    })();
+</script>
 </body>
 </html>

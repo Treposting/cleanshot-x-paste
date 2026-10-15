@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marquee demo</title>
+<!--
+  A time-driven scene for the landing-page demo video. Nothing animates on its own:
+  render(t) sets every element for time t (seconds), and video/render.mjs captures
+  each frame. Open this file in a browser and add #play to watch it in real time.
+-->
+<style>
+  :root {
+    --yellow: #FFCF1A;
+    --ink: #1D1D1F;
+    --rec: #FF3B30;
+    --measure: #FF2D78;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; background: #000; }
+  body { font-family: "Inter", -apple-system, system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .abs { position: absolute; }
+  #stage { position: relative; width: 1280px; height: 800px; overflow: hidden; }
+
+  /* Desktop */
+  #wall {
+    inset: 0;
+    background:
+      radial-gradient(1000px 700px at 15% 10%, #FFE07A 0%, transparent 60%),
+      radial-gradient(900px 700px at 90% 90%, #FF9A6B 0%, transparent 55%),
+      radial-gradient(700px 600px at 85% 15%, #FFC2D9 0%, transparent 60%),
+      linear-gradient(160deg, #FFE9A8, #FFB38A 60%, #F2A0B8);
+  }
+  #menubar {
+    left: 0; right: 0; top: 0; height: 28px;
+    background: rgba(255,255,255,.42); backdrop-filter: blur(24px) saturate(1.6);
+    display: flex; align-items: center; padding: 0 14px; gap: 18px; font-size: 13px; font-weight: 500;
+  }
+  #menubar .apple { font-size: 15px; }
+  #menubar b { font-weight: 700; }
+  #menubar .right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  #mbicon { width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center; }
+  #recind { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--rec); }
+  #recind i { width: 9px; height: 9px; border-radius: 50%; background: var(--rec); display: inline-block; }
+
+  /* App window */
+  #win {
+    left: 190px; top: 130px; width: 900px; height: 580px; border-radius: 14px; overflow: hidden;
+    background: #FBFBFA; box-shadow: 0 30px 80px rgba(80,40,0,.28), 0 0 0 1px rgba(0,0,0,.08);
+  }
+  #win .bar { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid #ECEAE6; background: #F4F3F0; }
+  #win .bar i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  #win .bar span { margin-left: 14px; font-size: 13px; font-weight: 600; color: #6E6B66; }
+  #win .side { left: 0; top: 40px; bottom: 0; width: 200px; background: #F1EFEB; padding: 18px 14px; }
+  #win .side div { height: 10px; border-radius: 5px; background: #DDD9D2; margin: 0 0 16px; }
+  #win .side div.on { background: var(--ink); width: 70%; }
+  #win h2 { position: absolute; left: 230px; top: 62px; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  #hero {
+    left: 230px; top: 110px; width: 620px; height: 220px; border-radius: 14px;
+    background: linear-gradient(135deg, #1D1D1F 0%, #3A2F1A 55%, #8A6A12 100%); color: #fff; padding: 26px 28px;
+  }
+  #hero .k { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--yellow); font-weight: 700; }
+  #hero .t { font-size: 34px; font-weight: 800; letter-spacing: -.02em; margin-top: 10px; line-height: 1.05; }
+  #hero .chart { position: absolute; right: 28px; bottom: 26px; display: flex; align-items: flex-end; gap: 10px; }
+  #hero .chart b { width: 22px; border-radius: 5px 5px 2px 2px; background: var(--yellow); display: block; }
+  #ship {
+    left: 230px; top: 350px; width: 140px; height: 44px; border-radius: 10px; background: var(--yellow);
+    font-weight: 700; font-size: 15px; display: grid; place-items: center;
+  }
+  .sw { top: 354px; width: 36px; height: 36px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  .line { left: 230px; height: 10px; border-radius: 5px; background: #E7E4DE; }
+
+  /* All-in-One */
+  #dim { left: 0; top: 0; width: 0; height: 0; box-shadow: 0 0 0 4000px rgba(0,0,0,.38); }
+  #sel { border: 1.5px solid var(--yellow); }
+  #sel .h { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 1.5px solid var(--yellow); }
+  .pill {
+    background: rgba(0,0,0,.72); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 6px;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .glass {
+    background: rgba(255,255,255,.74); backdrop-filter: blur(22px) saturate(1.7);
+    border: 1px solid rgba(255,255,255,.7); box-shadow: 0 14px 40px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.8);
+  }
+  #toolbar { border-radius: 999px; padding: 6px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .act { display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 10px 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 650; }
+  .act svg { width: 16px; height: 16px; }
+  .act kbd { font: 650 10px "Inter"; padding: 2px 5px; border-radius: 5px; background: rgba(0,0,0,.07); opacity: .8; }
+  .act.pri { background: var(--yellow); }
+  .act.pri kbd { background: rgba(0,0,0,.12); }
+  .chev { width: 20px; height: 38px; display: grid; place-items: center; border-radius: 999px; }
+  .chev svg { width: 10px; height: 10px; }
+  .sep { width: 1px; height: 22px; background: rgba(0,0,0,.14); margin: 0 6px; }
+  .dimtxt { color: #6E6B66; font-size: 12px; font-weight: 600; width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
+  .circ { width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,.06); display: grid; place-items: center; }
+  .circ svg { width: 13px; height: 13px; }
+  #menu { border-radius: 12px; padding: 6px; width: 230px; font-size: 13px; font-weight: 500; }
+  #menu div { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; }
+  #menu div span { margin-left: auto; color: #8A877F; font-size: 12px; }
+  #menu div.hl { background: #3478F6; color: #fff; }
+  #menu div.hl span { color: rgba(255,255,255,.8); }
+  #menu svg { width: 15px; height: 15px; }
+
+  #flash { inset: 0; background: #fff; }
+  #thumb {
+    left: 24px; bottom: 24px; width: 230px; height: 104px; border-radius: 12px; overflow: hidden;
+    border: 3px solid #fff; box-shadow: 0 16px 40px rgba(0,0,0,.3);
+  }
+  #thumb .img { position: absolute; inset: 0; background: linear-gradient(135deg, #1D1D1F 0%, #3A2F1A 55%, #8A6A12 100%); }
+  #thumb .img b { position: absolute; left: 14px; top: 16px; color: #fff; font-size: 15px; font-weight: 800; width: 120px; line-height: 1.05; }
+  #thumb .btns { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(0,0,0,.35); }
+  #thumb .btns span { background: rgba(255,255,255,.92); border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 650; }
+  #toast { left: 50%; top: 52px; transform: translateX(-50%); border-radius: 999px; padding: 9px 16px; font-size: 13.5px; font-weight: 650; display: flex; gap: 8px; align-items: center; }
+  #toast i { width: 18px; height: 18px; border-radius: 50%; background: #2BB673; display: grid; place-items: center; color: #fff; font-style: normal; font-size: 11px; }
+
+  /* Recording */
+  #recbar { border-radius: 999px; padding: 6px; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  #recbar .opt { display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 999px; background: rgba(0,0,0,.05); }
+  #recbar .opt svg { width: 15px; height: 15px; }
+  #meter { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
+  #meter b { width: 3px; border-radius: 2px; background: #2BB673; display: block; }
+  #recbtn { height: 36px; padding: 0 16px 0 12px; border-radius: 999px; background: var(--rec); color: #fff; display: flex; align-items: center; gap: 8px; }
+  #recbtn i { width: 12px; height: 12px; border-radius: 50%; background: #fff; display: inline-block; }
+  .tog { width: 30px; height: 18px; border-radius: 999px; background: #34C759; position: relative; }
+  .tog::after { content: ""; position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  #count { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; font-size: 64px; font-weight: 800; }
+  #recframe { border: 2px solid var(--rec); border-radius: 2px; }
+
+  /* Measure */
+  .mline { background: var(--measure); }
+  .mlabel { background: var(--measure); color: #fff; font-size: 11.5px; font-weight: 700; padding: 3px 7px; border-radius: 5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #snap { border: 1.5px solid var(--measure); background: rgba(255,45,120,.08); }
+
+  /* Color */
+  #loupe { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow: hidden;
+    background-image: linear-gradient(rgba(0,0,0,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.08) 1px, transparent 1px);
+    background-size: 12px 12px; }
+  #loupe .c { position: absolute; left: 54px; top: 54px; width: 12px; height: 12px; outline: 2px solid #fff; box-shadow: 0 0 0 3px rgba(0,0,0,.4); }
+  #chip { border-radius: 12px; padding: 8px 12px 8px 8px; display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 14px; }
+  #chip b { width: 28px; height: 28px; border-radius: 7px; background: var(--yellow); display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  #chip span { color: #6E6B66; font-weight: 500; font-size: 12.5px; }
+
+  /* Clipboard */
+  #clip { left: 40px; right: 40px; height: 250px; border-radius: 22px; padding: 18px; }
+  #clip .search { height: 34px; border-radius: 10px; background: rgba(0,0,0,.06); display: flex; align-items: center; padding: 0 12px; color: #8A877F; font-size: 13px; width: 300px; }
+  #clip .row { display: flex; gap: 14px; margin-top: 16px; }
+  .card { width: 180px; height: 160px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.08); flex: none; position: relative; }
+  .card header { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: #fff; font-size: 12px; font-weight: 700; }
+  .card header i { font-style: normal; width: 20px; height: 20px; border-radius: 5px; background: rgba(255,255,255,.28); display: grid; place-items: center; font-size: 11px; }
+  .card .body { padding: 10px; font-size: 12.5px; line-height: 1.4; color: #3A3835; }
+  .card.on { outline: 3px solid #3478F6; outline-offset: 2px; }
+
+  /* Overlays */
+  #keycap { left: 50%; bottom: 120px; transform: translateX(-50%); display: flex; gap: 8px; }
+  #keycap kbd { min-width: 54px; height: 54px; padding: 0 14px; border-radius: 12px; background: rgba(29,29,31,.86); color: #fff;
+    font: 700 24px "Inter"; display: grid; place-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.25), inset 0 -3px 0 rgba(0,0,0,.4); }
+  #caption { left: 40px; top: 44px; font-size: 30px; font-weight: 800; letter-spacing: -.025em; color: var(--ink); max-width: 560px; line-height: 1.05; }
+  #caption small { display: block; font-size: 15px; font-weight: 600; letter-spacing: 0; color: rgba(29,29,31,.72); margin-top: 6px; }
+  #cursor { width: 22px; height: 30px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+
+  /* Title and end cards */
+  .card-full { inset: 0; background: var(--yellow); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .card-full .logo { width: 128px; height: 128px; }
+  .card-full h1 { font-size: 84px; font-weight: 800; letter-spacing: -.04em; margin: 22px 0 6px; }
+  .card-full p { font-size: 26px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
+  .card-full .meta { margin-top: 26px; font-size: 16px; font-weight: 600; opacity: .7; }
+  .card-full .url { margin-top: 26px; font-size: 18px; font-weight: 700; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: var(--yellow); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="wall" class="abs"></div>
+
+  <div id="menubar" class="abs">
+    <svg width="14" height="16" viewBox="0 0 14 16"><path d="M11.6 8.5c0-2 1.6-2.9 1.7-3a3.7 3.7 0 0 0-2.9-1.6c-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7A3.9 3.9 0 0 0 1.5 6C.1 8.4 1.1 12 2.5 14c.7 1 1.5 2 2.5 2s1.4-.6 2.6-.6 1.5.6 2.6.6 1.7-1 2.4-2a8 8 0 0 0 1-2.2 3.4 3.4 0 0 1-2-3.3zM9.6 2.6A3.4 3.4 0 0 0 10.4 0a3.5 3.5 0 0 0-2.3 1.2 3.2 3.2 0 0 0-.8 2.4 2.9 2.9 0 0 0 2.3-1z" fill="#1D1D1F"/></svg><b>Notes</b><span>File</span><span>Edit</span><span>View</span><span>Window</span>
+    <div class="right">
+      <span id="recind" style="display:none"><i></i><span id="rectime">0s</span></span>
+      <span id="mbicon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#1D1D1F" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V5h4M20 15v4h-4"/><rect x="8" y="8" width="5.5" height="5.5" rx="1"/><rect x="11" y="11" width="5.5" height="5.5" rx="1" fill="#1D1D1F"/></svg></span>
+      <svg width="17" height="13" viewBox="0 0 17 13" fill="none" stroke="#1D1D1F" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 14 0M4 7.2a6.4 6.4 0 0 1 9 0M6.6 9.9a2.7 2.7 0 0 1 3.8 0"/></svg><span>Wed 9:41</span>
+    </div>
+  </div>
+
+  <div id="win" class="abs">
+    <div class="bar"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i><span>Launch plan</span></div>
+    <div class="side abs"><div class="on"></div><div style="width:80%"></div><div style="width:60%"></div><div style="width:72%"></div><div style="width:55%"></div></div>
+    <h2>Launch plan</h2>
+    <div id="hero" class="abs">
+      <div class="k">Q4 · Release</div>
+      <div class="t">Ship Marquee<br>to everyone</div>
+      <div class="chart"><b style="height:34px"></b><b style="height:58px"></b><b style="height:46px"></b><b style="height:82px"></b><b style="height:110px"></b></div>
+    </div>
+    <div id="ship" class="abs">Ship it</div>
+    <div class="sw abs" style="left:400px;background:#FFCF1A"></div>
+    <div class="sw abs" style="left:448px;background:#1D1D1F"></div>
+    <div class="sw abs" style="left:496px;background:#FF6B4A"></div>
+    <div class="sw abs" style="left:544px;background:#3E7BFA"></div>
+    <div class="sw abs" style="left:592px;background:#2BB673"></div>
+    <div class="line abs" style="top:430px;width:560px"></div>
+    <div class="line abs" style="top:452px;width:500px"></div>
+    <div class="line abs" style="top:474px;width:420px"></div>
+    <div class="line abs" style="top:510px;width:540px"></div>
+    <div class="line abs" style="top:532px;width:380px"></div>
+  </div>
+
+  <!-- All-in-One -->
+  <div id="dim" class="abs"></div>
+  <div id="sel" class="abs">
+    <span class="h" style="left:-5px;top:-5px"></span><span class="h" style="right:-5px;top:-5px"></span>
+    <span class="h" style="left:-5px;bottom:-5px"></span><span class="h" style="right:-5px;bottom:-5px"></span>
+    <span class="h" style="left:calc(50% - 4.5px);top:-5px"></span><span class="h" style="left:calc(50% - 4.5px);bottom:-5px"></span>
+    <span class="h" style="left:-5px;top:calc(50% - 4.5px)"></span><span class="h" style="right:-5px;top:calc(50% - 4.5px)"></span>
+  </div>
+  <div id="selsize" class="abs pill"></div>
+  <div id="toolbar" class="abs glass">
+    <div class="act pri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/><circle cx="12" cy="12" r="3.2"/></svg>Screenshot<kbd>↩</kbd></div>
+    <div class="chev" id="chev"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3.5l3 3 3-3"/></svg></div>
+    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5" fill="#FF3B30"/></svg>Record<kbd>R</kbd></div>
+    <div class="chev"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3.5l3 3 3-3"/></svg></div>
+    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/></svg>Copy<kbd>⌘C</kbd></div>
+    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 10h8M8 14h5"/></svg>Copy Text<kbd>T</kbd></div>
+    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></svg>Pin<kbd>P</kbd></div>
+    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 6l4 4M5 19l1-4 9-9 3 3-9 9z"/></svg>Color<kbd>C</kbd></div>
+    <div class="sep"></div>
+    <div class="dimtxt" id="tbsize">Full screen</div>
+    <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></div>
+    <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+  </div>
+  <div id="menu" class="abs glass">
+    <div id="mi1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"><rect x="4" y="5" width="16" height="14" rx="1"/></svg>Selected Area<span>↩</span></div>
+    <div id="mi2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 20h6"/></svg>Full Screen<span>F</span></div>
+    <div id="mi3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>Window…<span>W</span></div>
+  </div>
+
+  <div id="flash" class="abs"></div>
+  <div id="thumb" class="abs"><div class="img"><b>Ship Marquee to everyone</b></div><div class="btns"><span>Copy</span><span>Save</span><span>Annotate</span></div></div>
+  <div id="toast" class="abs glass"><i>✓</i><span id="toasttxt">Screenshot copied</span></div>
+
+  <!-- Recording -->
+  <div id="recframe" class="abs"></div>
+  <div id="recbar" class="abs glass">
+    <div class="opt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>MacBook Pro Microphone<div id="meter"></div></div>
+    <div class="opt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>Desktop audio<span class="tog"></span></div>
+    <div id="recbtn"><i></i>Record</div>
+  </div>
+  <div id="count" class="abs glass"></div>
+
+  <!-- Measure -->
+  <div id="mh" class="abs mline" style="height:1px"></div>
+  <div id="mv" class="abs mline" style="width:1px"></div>
+  <div id="mlh" class="abs mlabel"></div>
+  <div id="mlv" class="abs mlabel"></div>
+  <div id="snap" class="abs"></div>
+  <div id="snaplabel" class="abs mlabel"></div>
+
+  <!-- Color -->
+  <div id="loupe" class="abs"><div class="c"></div></div>
+  <div id="chip" class="abs glass"><b></b><div>#FFCF1A<br><span>Copied as HEX</span></div></div>
+
+  <!-- Clipboard -->
+  <div id="clip" class="abs glass">
+    <div class="search">⌕&nbsp; Search clipboard history</div>
+    <div class="row">
+      <div class="card" id="c1"><header style="background:#3E7BFA">Text<i>1</i></header><div class="body">Ship Marquee to everyone this week. Notes from the review are in the doc.</div></div>
+      <div class="card" id="c2"><header style="background:#1F9E8F">Link<i>2</i></header><div class="body">github.com/<br>Treposting/marquee</div></div>
+      <div class="card" id="c3"><header style="background:#8A6A12">Image<i>3</i></header><div class="body" style="padding:0;height:126px;background:linear-gradient(135deg,#1D1D1F,#3A2F1A 55%,#8A6A12)"></div></div>
+      <div class="card" id="c4"><header style="background:#E5484D">Color<i>4</i></header><div class="body"><div style="height:60px;border-radius:8px;background:#FFCF1A"></div><div style="margin-top:8px;font-weight:700">#FFCF1A</div></div></div>
+      <div class="card" id="c5"><header style="background:#6E6B66">File<i>5</i></header><div class="body">launch-plan.pdf<br><span style="color:#8A877F">2.4 MB</span></div></div>
+      <div class="card" id="c6"><header style="background:#3E7BFA">Text<i>6</i></header><div class="body">hello@marquee.app</div></div>
+    </div>
+  </div>
+
+  <div id="caption" class="abs"></div>
+  <div id="keycap" class="abs"></div>
+
+  <svg id="cursor" class="abs" viewBox="0 0 22 30"><path d="M2 2v22l6-6 4 9 4-2-4-8.5h8.5z" fill="#000" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
+
+  <div id="title" class="abs card-full">
+    <svg class="logo" viewBox="0 0 512 512"><rect x="16" y="16" width="480" height="480" rx="116" fill="#1D1D1F"/><g fill="none" stroke="#FFCF1A" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"><path d="M112 196V128a16 16 0 0 1 16-16h68"/><path d="M400 316v68a16 16 0 0 1-16 16h-68"/></g><rect x="166" y="166" width="124" height="124" rx="20" fill="none" stroke="#FFCF1A" stroke-width="26"/><rect x="222" y="222" width="124" height="124" rx="20" fill="#FFCF1A"/></svg>
+    <h1>Marquee</h1>
+    <p>Capture the screen. Keep the clipboard.</p>
+  </div>
+  <div id="end" class="abs card-full">
+    <svg class="logo" viewBox="0 0 512 512"><rect x="16" y="16" width="480" height="480" rx="116" fill="#1D1D1F"/><g fill="none" stroke="#FFCF1A" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"><path d="M112 196V128a16 16 0 0 1 16-16h68"/><path d="M400 316v68a16 16 0 0 1-16 16h-68"/></g><rect x="166" y="166" width="124" height="124" rx="20" fill="none" stroke="#FFCF1A" stroke-width="26"/><rect x="222" y="222" width="124" height="124" rx="20" fill="#FFCF1A"/></svg>
+    <h1>Marquee</h1>
+    <p>Free and open source, for macOS 13 to 27.</p>
+    <div class="meta">Screenshots · Recording · Measure · Colors · Clipboard history</div>
+    <div class="url">treposting.github.io/marquee</div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const ease = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+const out = p => 1 - Math.pow(1 - p, 3);
+const prog = (t, a, b, f = ease) => f(clamp((t - a) / (b - a)));
+/** Fade in over [a, a+d], out over [b-d, b]. */
+const win = (t, a, b, d = .25) => Math.min(prog(t, a, a + d, out), 1 - prog(t, b - d, b));
+const lerp = (a, b, p) => a + (b - a) * p;
+
+function css(el, s) { for (const k in s) el.style[k] = s[k]; }
+function show(el, o) { el.style.opacity = o; el.style.visibility = o <= 0.001 ? 'hidden' : 'visible'; }
+
+/** Piecewise path: [[t, x, y], ...] with eased moves between points. */
+function path(t, pts) {
+  if (t <= pts[0][0]) return [pts[0][1], pts[0][2]];
+  for (let i = 1; i < pts.length; i++) {
+    const [t1, x1, y1] = pts[i], [t0, x0, y0] = pts[i - 1];
+    if (t <= t1) { const p = ease((t - t0) / Math.max(1e-6, t1 - t0)); return [lerp(x0, x1, p), lerp(y0, y1, p)]; }
+  }
+  const l = pts[pts.length - 1]; return [l[1], l[2]];
+}
+
+const meter = $('meter');
+for (let i = 0; i < 8; i++) meter.appendChild(document.createElement('b'));
+
+// Key moments (seconds).
+const T = { title: 2.2, aio: 2.4, drag0: 4.2, drag1: 5.2, menu: 6.0, shot: 7.0, rec: 8.9, go: 11.4, recEnd: 13.4,
+            measure: 13.6, color: 16.5, clip: 18.9, end: 21.8, total: 24 };
+
+const SEL = { x0: 410, y0: 230, x1: 1052, y1: 472 };
+
+function render(t) {
+  // Title and end cards
+  show($('title'), 1 - prog(t, T.title - .2, T.title + .2));
+  css($('title'), { transform: `scale(${lerp(1, 1.04, prog(t, 0, T.title))})` });
+  show($('end'), prog(t, T.end, T.end + .4));
+  css($('end'), { transform: `scale(${lerp(.97, 1, prog(t, T.end, T.end + .6, out))})` });
+
+  // Captions
+  const caps = [
+    [T.aio, T.shot + 1.6, 'All-in-One', 'One shortcut. Pick an area, then choose what to do.'],
+    [T.rec - .1, T.recEnd, 'Record with sound', 'Your mic, your Mac’s audio, or both.'],
+    [T.measure, T.color - .1, 'Measure anything', 'Distances and exact sizes, PixelSnap-style.'],
+    [T.color, T.clip - .1, 'Pick any color', 'Copied as HEX, RGB, HSL or SwiftUI.'],
+    [T.clip, T.end, 'Clipboard history', 'Everything you copy, a ⇧⌘V away.'],
+  ];
+  let capOpacity = 0;
+  for (const [a, b, h, s] of caps) {
+    const o = win(t, a, b, .3);
+    if (o > 0) { $('caption').innerHTML = `${h}<small>${s}</small>`; capOpacity = o; css($('caption'), { transform: `translateY(${(1 - o) * 10}px)` }); }
+  }
+  show($('caption'), capOpacity);
+
+  // Keycaps
+  const keys = [
+    [T.aio + .2, T.aio + 1.3, ['⌥', '⇧', '⌘', 'A']],
+    [T.rec - .1, T.rec + .9, ['⌥', '⇧', '⌘', 'A'], 'then R'],
+    [T.clip + .1, T.clip + 1.1, ['⇧', '⌘', 'V']],
+  ];
+  let k = 0;
+  for (const [a, b, ks] of keys) {
+    const o = win(t, a, b, .15);
+    if (o > 0) { $('keycap').innerHTML = ks.map(x => `<kbd>${x}</kbd>`).join(''); k = o; css($('keycap'), { transform: `translateX(-50%) scale(${lerp(.9, 1, o)})` }); }
+  }
+  show($('keycap'), k);
+
+  // ----- All-in-One -----
+  const aioOn = t >= T.aio + .6 && t < T.shot;
+  const dragP = prog(t, T.drag0, T.drag1, x => x);
+  let sel = null;
+  if (t >= T.drag0 && t < T.shot) {
+    sel = { x: SEL.x0, y: SEL.y0, w: (SEL.x1 - SEL.x0) * ease(dragP), h: (SEL.y1 - SEL.y0) * ease(dragP) };
+  }
+  // Recording uses the window as its area.
+  const recSel = { x: 190, y: 130, w: 900, h: 580 };
+  const recSetup = t >= T.rec + .6 && t < T.go;
+  const dimO = aioOn ? prog(t, T.aio + .6, T.aio + .9) : recSetup ? prog(t, T.rec + .6, T.rec + .9) : 0;
+  const s = recSetup ? recSel : sel;
+  if (s) css($('dim'), { left: s.x + 'px', top: s.y + 'px', width: s.w + 'px', height: s.h + 'px' });
+  else css($('dim'), { left: '640px', top: '400px', width: '0px', height: '0px' });
+  show($('dim'), dimO);
+
+  show($('sel'), s && s.w > 2 ? dimO : 0);
+  if (s) css($('sel'), { left: s.x + 'px', top: s.y + 'px', width: s.w + 'px', height: s.h + 'px' });
+  const dragging = t >= T.drag0 && t < T.drag1;
+  [...$('sel').querySelectorAll('.h')].forEach(h => h.style.opacity = dragging || recSetup ? 0 : 1);
+  show($('selsize'), sel && sel.w > 2 && aioOn ? 1 : 0);
+  if (sel) { $('selsize').textContent = `${Math.round(sel.w)} × ${Math.round(sel.h)}`; css($('selsize'), { left: sel.x + 'px', top: (sel.y - 30) + 'px' }); }
+
+  // Toolbar: bottom center first, under the selection after the drag.
+  const tb = $('toolbar');
+  const tbW = tb.offsetWidth;
+  const hasSel = t >= T.drag1;
+  $('tbsize').textContent = hasSel ? '642 × 242' : 'Full screen';
+  const tbIn = prog(t, T.aio + .7, T.aio + 1.1, out);
+  let tbO = aioOn ? tbIn : 0;
+  if (dragging) tbO = 0;
+  if (t >= T.drag1 && t < T.shot) tbO = prog(t, T.drag1 + .05, T.drag1 + .3, out);
+  const tbx = hasSel ? (SEL.x0 + SEL.x1) / 2 - tbW / 2 : 640 - tbW / 2;
+  const tby = hasSel ? SEL.y1 + 14 : 728 + (1 - tbIn) * 30;
+  css(tb, { left: tbx + 'px', top: tby + 'px' });
+  show(tb, tbO);
+
+  // Screenshot ▾ menu
+  const menuO = t >= T.menu && t < T.shot ? prog(t, T.menu, T.menu + .15, out) : 0;
+  const chev = $('chev').getBoundingClientRect();
+  css($('menu'), { left: (chev.left - 6) + 'px', top: (chev.bottom + 8) + 'px', transform: `scale(${lerp(.96, 1, menuO)})`, transformOrigin: 'top left' });
+  show($('menu'), menuO);
+  $('mi1').className = t > T.menu + .55 ? 'hl' : '';
+
+  // Shutter and Quick Access
+  show($('flash'), t >= T.shot ? .85 * (1 - prog(t, T.shot + .02, T.shot + .3, out)) : 0);
+  const thO = win(t, T.shot + .25, T.rec + .2, .3);
+  show($('thumb'), thO);
+  css($('thumb'), { transform: `translateX(${(1 - prog(t, T.shot + .25, T.shot + .6, out)) * -260}px)` });
+  $('thumb').querySelector('.btns').style.opacity = t > T.shot + 1.1 && t < T.rec ? 1 : 0;
+  const toast = [[T.shot + .35, T.shot + 1.7, 'Screenshot copied'], [T.color + 1.25, T.color + 2.3, '#FFCF1A copied']];
+  let to = 0;
+  for (const [a, b, txt] of toast) { const o = win(t, a, b, .2); if (o > 0) { $('toasttxt').textContent = txt; to = o; } }
+  show($('toast'), to);
+  css($('toast'), { transform: `translateX(-50%) translateY(${(1 - to) * -8}px)` });
+
+  // ----- Recording -----
+  const rb = $('recbar');
+  css(rb, { left: (640 - rb.offsetWidth / 2) + 'px', top: '726px' });
+  show(rb, recSetup ? prog(t, T.rec + .7, T.rec + 1.0, out) * (1 - prog(t, T.rec + 1.6, T.rec + 1.8)) : 0);
+  [...meter.children].forEach((b, i) => { const v = .25 + .75 * Math.abs(Math.sin(t * 9 + i * 1.3) * Math.sin(t * 4.1 + i)); b.style.height = (3 + v * 11) + 'px'; });
+  // Countdown 3, 2, 1, Go
+  const cd0 = T.rec + 1.8;
+  const step = Math.floor((t - cd0) / .4);
+  const countO = t >= cd0 && t < T.go ? 1 - prog(t, T.go - .15, T.go) : 0;
+  $('count').textContent = ['3', '2', '1', 'Go'][clamp(step, 0, 3)];
+  const local = ((t - cd0) % .4) / .4;
+  css($('count'), { left: '565px', top: '345px', transform: `scale(${lerp(1.15, 1, out(clamp(local * 2)))})`, color: step >= 3 ? '#FF3B30' : '#1D1D1F' });
+  show($('count'), countO);
+  const recording = t >= T.go && t < T.recEnd;
+  show($('recframe'), recording ? 1 - prog(t, T.recEnd - .2, T.recEnd) : 0);
+  css($('recframe'), { left: '188px', top: '128px', width: '904px', height: '584px' });
+  $('recind').style.display = recording ? 'flex' : 'none';
+  $('recind').querySelector('i').style.opacity = Math.floor(t * 2) % 2 === 0 ? 1 : .25;
+  $('rectime').textContent = `${Math.max(0, Math.floor(t - T.go))}s`;
+
+  // ----- Measure -----
+  const mOn = t >= T.measure + .3 && t < T.color - .2;
+  const snapOn = t >= T.measure + 1.6 && t < T.color - .2;
+  const mO = mOn ? prog(t, T.measure + .3, T.measure + .5) * (1 - prog(t, T.color - .4, T.color - .2)) : 0;
+  const [mx, my] = path(t, [[T.measure + .3, 760, 640], [T.measure + 1.4, 880, 600]]);
+  // Distances to the window edges below the content, in this mock.
+  // Nearest edges: the sidebar, the window's right side, the button row and the window bottom.
+  const left = 390, right = 1090, top = 524, bottom = 710;
+  css($('mh'), { left: left + 'px', top: my + 'px', width: (right - left) + 'px' });
+  css($('mv'), { left: mx + 'px', top: top + 'px', height: (bottom - top) + 'px' });
+  $('mlh').textContent = `${Math.round(right - left)}`;
+  $('mlv').textContent = `${Math.round(bottom - top)}`;
+  css($('mlh'), { left: (left + 12) + 'px', top: (my - 24) + 'px' });
+  css($('mlv'), { left: (mx + 8) + 'px', top: (top + 6) + 'px' });
+  const lineO = snapOn ? mO * (1 - prog(t, T.measure + 1.6, T.measure + 1.8)) : mO;
+  ['mh', 'mv', 'mlh', 'mlv'].forEach(id => show($(id), lineO));
+  // Drag around "Ship it" and snap to it.
+  const sp = prog(t, T.measure + 1.6, T.measure + 2.1);
+  const snapRect = { x: 420, y: 480, w: 140, h: 44 };
+  const loose = { x: 404, y: 466, w: 176, h: 72 };
+  const r = { x: lerp(loose.x, snapRect.x, prog(t, T.measure + 2.2, T.measure + 2.45, out)), y: lerp(loose.y, snapRect.y, prog(t, T.measure + 2.2, T.measure + 2.45, out)) };
+  r.w = lerp(lerp(0, loose.w, sp), snapRect.w, prog(t, T.measure + 2.2, T.measure + 2.45, out));
+  r.h = lerp(lerp(0, loose.h, sp), snapRect.h, prog(t, T.measure + 2.2, T.measure + 2.45, out));
+  css($('snap'), { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+  show($('snap'), snapOn ? mO : 0);
+  $('snaplabel').textContent = `${Math.round(r.w)} × ${Math.round(r.h)}`;
+  css($('snaplabel'), { left: r.x + 'px', top: (r.y + r.h + 8) + 'px' });
+  show($('snaplabel'), snapOn ? mO : 0);
+
+  // ----- Color -----
+  const cOn = t >= T.color + .2 && t < T.clip - .1;
+  const [lx, ly] = path(t, [[T.color + .2, 760, 600], [T.color + 1.0, 608, 502]]);
+  const loupeO = cOn ? prog(t, T.color + .2, T.color + .4) * (1 - prog(t, T.color + 1.2, T.color + 1.35)) : 0;
+  css($('loupe'), { left: (lx - 60) + 'px', top: (ly - 140) + 'px', background: `${t > T.color + .85 ? '#FFCF1A' : '#FBFBFA'}`, backgroundImage: 'linear-gradient(rgba(0,0,0,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.1) 1px, transparent 1px)', backgroundSize: '12px 12px' });
+  show($('loupe'), loupeO);
+  const chipO = win(t, T.color + 1.25, T.clip - .2, .25);
+  css($('chip'), { left: '836px', top: '481px', transform: `translateY(${(1 - chipO) * 6}px)` });
+  show($('chip'), chipO);
+
+  // ----- Clipboard -----
+  const clipIn = prog(t, T.clip + .4, T.clip + .8, out) * (1 - prog(t, T.end - .5, T.end - .1));
+  css($('clip'), { top: (800 - 270 * clipIn) + 'px' });
+  show($('clip'), clipIn > 0 ? 1 : 0);
+  const sel3 = clamp(Math.floor((t - (T.clip + 1.0)) / .45), 0, 3);
+  ['c1', 'c2', 'c3', 'c4'].forEach((id, i) => $(id).className = 'card' + (i === sel3 ? ' on' : ''));
+
+  // ----- Cursor -----
+  const tbChev = chev;
+  const cur = path(t, [
+    [T.aio, 900, 590],
+    [T.aio + 1.6, 410, 230],             // to drag start
+    [T.drag0, 410, 230],
+    [T.drag1, SEL.x1, SEL.y1],           // drag
+    [T.drag1 + .3, SEL.x1, SEL.y1],
+    [T.menu - .05, tbChev.left + 10, tbChev.top + 19],
+    [T.menu + .5, tbChev.left + 10, tbChev.top + 19],
+    [T.menu + .6, tbChev.left + 40, tbChev.bottom + 26],
+    [T.shot + .5, tbChev.left + 40, tbChev.bottom + 26],
+    [T.rec + 1.3, 640, 756],             // Record button
+    [T.measure + .3, 760, 640],
+    [T.measure + 1.4, 880, 600],
+    [T.measure + 1.6, 404, 466],         // drag around Ship it
+    [T.measure + 2.1, 580, 538],
+    [T.color + .2, 760, 600],
+    [T.color + 1.0, 608, 502],
+    [T.clip + .2, 900, 670],
+  ]);
+  const cursorO = (t > T.title + .2 && t < T.end) ? 1 : 0;
+  const hideCursor = (t >= T.go && t < T.recEnd) || (t >= T.clip + .5);
+  css($('cursor'), { left: cur[0] - 2 + 'px', top: cur[1] - 2 + 'px' });
+  show($('cursor'), hideCursor ? 0 : cursorO);
+}
+
+window.render = render;
+window.TOTAL = T.total;
+render(0);
+if (location.hash === '#play') {
+  const start = performance.now();
+  const loop = () => { render(((performance.now() - start) / 1000) % T.total); requestAnimationFrame(loop); };
+  loop();
+}
+</script>
+</body>
+</html>

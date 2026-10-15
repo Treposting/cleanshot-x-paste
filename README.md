@@ -14,6 +14,7 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 
 [**Download**](https://github.com/Treposting/marquee/releases/latest) &nbsp;·&nbsp;
 [Website](https://treposting.github.io/marquee/) &nbsp;·&nbsp;
+[Demo video](https://treposting.github.io/marquee/#demo) &nbsp;·&nbsp;
 [How it works](docs/HOW-IT-WORKS.md) &nbsp;·&nbsp;
 [Report a bug](https://github.com/Treposting/marquee/issues)
 
