@@ -28,7 +28,6 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 - [Install](#install)
 - [Using Marquee](#using-marquee)
 - [Privacy](#privacy)
-- [Build from source](#build-from-source)
 - [Troubleshooting](#troubleshooting)
 - [Updates](#updates)
 - [Roadmap](#roadmap)
@@ -180,55 +179,6 @@ You can change these in **Settings → Shortcuts**. Click a shortcut and press n
 - **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`. Marquee never records those items.
 - **Pause history** from the menu bar when you're copying something sensitive.
 
-## Build from source
-
-You need Xcode 26 or later. The app still runs on macOS 13 and later, but only the macOS 26 SDK turns on Liquid Glass.
-
-```sh
-git clone https://github.com/Treposting/marquee.git
-cd marquee
-make run
-```
-
-| Command | What it does |
-|---|---|
-| `make build` | Debug build with SwiftPM |
-| `make run` | Builds `build/Marquee.app` and opens it |
-| `make install` | Copies the app to `/Applications` |
-| `make dmg` | Universal build, packaged as `build/Marquee-<version>.dmg` |
-| `make clean` | Removes build output |
-
-You can also open `Package.swift` in Xcode and press Run.
-
-The app has no third-party dependencies. It is built entirely on Apple frameworks:
-
-| Feature | Framework |
-|---|---|
-| Screenshots | `screencapture` |
-| Recording | ScreenCaptureKit, AVFoundation |
-| OCR | Vision |
-| Clipboard | NSPasteboard |
-| Global shortcuts | Carbon |
-
-[docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) explains each feature and the API behind it.
-
-<details>
-<summary><b>Project layout</b></summary>
-
-```
-Sources/Marquee/
-├── App/         Entry point, menu bar, global shortcuts, preferences
-├── Capture/     Screenshots, Quick Access overlay, pinned windows, OCR
-├── Record/      ScreenCaptureKit recorder, MP4 writer, area picker, GIF export
-├── Annotate/    Annotation model, renderer and editor window
-├── Clipboard/   Pasteboard monitor, history store, history panel, auto-paste
-└── UI/          Settings, shortcut recorder, toast messages
-scripts/         App bundle, icon and DMG build scripts
-site/            Website (deployed to GitHub Pages)
-```
-
-</details>
-
 ## Troubleshooting
 
 <details>
@@ -247,16 +197,6 @@ From macOS 15.4, macOS can ask before, or block, apps that read the clipboard in
 <summary><b>macOS asks for permissions again after an update</b></summary>
 
 macOS ties permissions to how an app is signed. Releases are signed ad hoc unless the maintainer has set up a stable certificate, and then every update looks like a new app. Grant the permissions again, or see [docs/SIGNING.md](docs/SIGNING.md) for the one-time setup that fixes it.
-</details>
-
-<details>
-<summary><b>macOS asks for permissions again after I rebuild</b></summary>
-
-Local builds are signed ad hoc, and macOS ties permissions to the signature. To keep permissions across rebuilds, sign with a stable identity, such as a self-signed certificate made in Keychain Access:
-
-```sh
-SIGN_IDENTITY="Your Certificate Name" make app
-```
 </details>
 
 <details>
@@ -301,15 +241,37 @@ Ideas and requests are welcome in [Issues](https://github.com/Treposting/marquee
 ## Contributing
 
 1. Fork the repo and create a branch from `main`.
-2. Make your change. `make run` builds and launches the app.
-3. Open a pull request. CI builds the universal app and DMG on every push, and it needs to pass.
+2. Make your change. You need Xcode 26: `make run` builds and launches the app, and `swift test` runs the tests.
+3. Open a pull request. CI runs the tests and builds the universal app and DMG on every push, and it needs to pass.
+
+Marquee has no third-party dependencies; [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) explains each feature and the Apple API behind it.
+
+<details>
+<summary><b>Project layout</b></summary>
+
+```
+Sources/Marquee/
+├── App/         Entry point, menu bar, global shortcuts, preferences
+├── Capture/     Screenshots, Quick Access overlay, pinned windows, OCR
+├── Record/      Recording toolbar, ScreenCaptureKit recorder, microphone, MP4 writer, GIF export
+├── Measure/     Screen ruler: snapshot, edge finder, overlay
+├── Annotate/    Annotation model, renderer and editor window
+├── Clipboard/   Pasteboard monitor, history store, history panel, auto-paste
+├── Update/      In-app updates from GitHub Releases
+└── UI/          Settings, shortcut recorder, toasts, Liquid Glass helpers
+Tests/           Unit tests
+scripts/         App bundle, icon, DMG and signing scripts
+site/            Website (deployed to GitHub Pages)
+```
+
+</details>
 
 ### Releasing
 
 1. Go to **Actions → Release → Run workflow**.
-2. Enter a version such as `0.3.0`, or leave it empty to release the version already in `Resources/Info.plist`.
+2. Enter a version such as `0.5.0`, or leave it empty to release the version already in `Resources/Info.plist`.
 
-The workflow updates `Info.plist` if the version changed, builds the universal DMG, creates the `v0.3.0` tag, and publishes a GitHub Release with the DMG and generated release notes.
+The workflow updates `Info.plist` if the version changed, builds the universal DMG, creates the `v0.5.0` tag, and publishes a GitHub Release with the DMG and generated release notes.
 
 Pushing a `v*` tag by hand also works.
 

@@ -326,9 +326,8 @@
     .board { background: var(--surface); }
 
     /* Install */
-    .install { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 40px 64px; align-items: start; }
-    @media (max-width: 860px) { .install { grid-template-columns: 1fr; } }
-    .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 26px; counter-reset: s; }
+    .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px 40px; counter-reset: s; }
+    @media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
     .steps li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 14px; }
     .steps li::before {
       counter-increment: s; content: counter(s);
@@ -336,15 +335,9 @@
     }
     .steps b { font-family: var(--display); font-size: 20px; font-weight: 700; }
     .steps p { color: var(--muted); font-size: 15.5px; }
-    .term {
       border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
       background: #1D1D1F; color: #EDEDF0; min-width: 0;
     }
-    .term .bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid #333336; }
-    .term .bar i { width: 11px; height: 11px; border-radius: 50%; background: #3E3E42; }
-    .term pre { margin: 0; padding: 18px 20px 22px; overflow-x: auto; font: 400 14px/1.75 var(--mono); }
-    .term .c { color: #8E8E95; }
-    .term .p { color: #FFCF1A; }
 
     /* Closing */
     .closing { padding-block: clamp(80px, 11vw, 140px); }
@@ -524,21 +517,11 @@
           <h2>Install</h2>
           <p class="lede">Takes about a minute, once. After that, Marquee updates itself: you get a prompt with the release notes, and a restart installs the new version.</p>
         </div>
-        <div class="install">
-          <ol class="steps">
+        <ol class="steps">
             <li><b>Download the DMG</b><p>Get the latest release from <a class="textlink" href="https://github.com/Treposting/marquee/releases/latest">GitHub</a>, open it, and drag Marquee into Applications.</p></li>
             <li><b>Open it once with right-click</b><p>Releases aren't notarized by Apple yet, so macOS asks you to confirm the first launch: right-click the app and choose Open.</p></li>
             <li><b>Allow Screen Recording</b><p>macOS asks the first time you capture. Accessibility is optional; it lets Marquee paste into other apps for you.</p></li>
           </ol>
-          <div class="term" aria-label="Build from source">
-            <div class="bar"><i></i><i></i><i></i></div>
-<pre><span class="c"># Or build it yourself (Xcode 15+)</span>
-<span class="p">$</span> git clone https://github.com/Treposting/marquee.git
-<span class="p">$</span> cd marquee
-<span class="p">$</span> make run     <span class="c"># build and launch</span>
-<span class="p">$</span> make dmg     <span class="c"># universal DMG in build/</span></pre>
-          </div>
-        </div>
       </div>
     </section>
 
