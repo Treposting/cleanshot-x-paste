@@ -86,8 +86,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         switch self {
         case .captureArea: return "Capture Area"
         case .captureWindow: return "Capture Window"
-        case .captureFullscreen: return "Capture Fullscreen"
-        case .captureTimed: return "Capture Fullscreen in 5 s"
+        case .captureFullscreen: return "Capture Full Screen"
+        case .captureTimed: return "Capture Full Screen in 5 Seconds"
         case .captureText: return "Capture Text (OCR)"
         case .recordArea: return "Record Area"
         case .recordScreen: return "Record Screen"
