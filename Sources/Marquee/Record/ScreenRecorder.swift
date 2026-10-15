@@ -77,6 +77,8 @@ final class ScreenRecorder {
         try await stream.startCapture()
 
         microphone?.sink = { [weak output] buffer in
+            // CMSampleBuffer isn't Sendable; it's only handed to the writer's own queue.
+            nonisolated(unsafe) let buffer = buffer
             output?.queue.async { output?.appendMicrophone(buffer) }
         }
         self.microphone = microphone
