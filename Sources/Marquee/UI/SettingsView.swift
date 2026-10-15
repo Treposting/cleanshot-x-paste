@@ -85,7 +85,7 @@ private struct LaunchAtLoginToggle: View {
                         try SMAppService.mainApp.unregister()
                     }
                 } catch {
-                    NSLog("ShotPaste: launch at login failed: \(error)")
+                    NSLog("Marquee: launch at login failed: \(error)")
                 }
                 enabled = SMAppService.mainApp.status == .enabled
             }

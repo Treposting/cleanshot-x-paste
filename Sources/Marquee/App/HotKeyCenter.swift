@@ -18,13 +18,13 @@ final class HotKeyCenter {
         let id = nextID
         nextID += 1
         var ref: EventHotKeyRef?
-        let hotKeyID = EventHotKeyID(signature: OSType(0x5348_5054), id: id) // 'SHPT'
+        let hotKeyID = EventHotKeyID(signature: OSType(0x4D52_5145), id: id) // 'MRQE'
         let status = RegisterEventHotKey(
             combo.keyCode, combo.modifiers, hotKeyID,
             GetApplicationEventTarget(), 0, &ref
         )
         guard status == noErr, let ref else {
-            NSLog("ShotPaste: failed to register hotkey \(combo.displayString) (status \(status))")
+            NSLog("Marquee: failed to register hotkey \(combo.displayString) (status \(status))")
             return false
         }
         handlers[id] = handler

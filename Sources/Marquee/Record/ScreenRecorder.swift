@@ -24,7 +24,7 @@ final class ScreenRecorder {
             throw RecorderError.displayNotFound
         }
 
-        // Keep ShotPaste's own windows (selection border, overlays) out of the video.
+        // Keep Marquee's own windows (selection border, overlays) out of the video.
         let pid = ProcessInfo.processInfo.processIdentifier
         let ownApps = content.applications.filter { $0.processID == pid }
         let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
@@ -55,10 +55,10 @@ final class ScreenRecorder {
         config.channelCount = 2
 
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ShotPaste-\(UUID().uuidString).mp4")
+            .appendingPathComponent("Marquee-\(UUID().uuidString).mp4")
         let output = try RecordingOutput(url: url, width: width, height: height, fps: fps, captureAudio: captureAudio)
         output.onStreamError = { [weak self] error in
-            NSLog("ShotPaste: recording stream stopped: \(error)")
+            NSLog("Marquee: recording stream stopped: \(error)")
             Task { @MainActor in self?.onUnexpectedStop?() }
         }
 
@@ -87,7 +87,7 @@ final class ScreenRecorder {
         do {
             try await stream.stopCapture()
         } catch {
-            NSLog("ShotPaste: stopCapture failed: \(error)")
+            NSLog("Marquee: stopCapture failed: \(error)")
         }
         return await output.finish()
     }

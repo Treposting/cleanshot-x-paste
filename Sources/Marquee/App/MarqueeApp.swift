@@ -2,7 +2,7 @@ import AppKit
 
 @main
 @MainActor
-enum ShotPasteMain {
+enum MarqueeMain {
     static let delegate = AppDelegate()
 
     static func main() {

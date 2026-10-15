@@ -13,7 +13,7 @@ enum CaptureMode {
 /// It gives us the native crosshair selection UI (with Space to toggle window
 /// mode, Esc to cancel, Shift/Option to lock and resize) for free, and handles
 /// multiple displays and Retina scaling. The Screen Recording permission prompt
-/// is attributed to ShotPaste because we are the responsible process.
+/// is attributed to Marquee because we are the responsible process.
 @MainActor
 final class CaptureService {
     private var isCapturing = false
@@ -23,7 +23,7 @@ final class CaptureService {
         isCapturing = true
 
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("ShotPaste-\(UUID().uuidString).png")
+            .appendingPathComponent("Marquee-\(UUID().uuidString).png")
 
         var args: [String] = []
         if !Preferences.playSound || mode == .text { args.append("-x") }
@@ -54,7 +54,7 @@ final class CaptureService {
             try process.run()
         } catch {
             isCapturing = false
-            NSLog("ShotPaste: screencapture failed: \(error)")
+            NSLog("Marquee: screencapture failed: \(error)")
             completion(nil)
         }
     }

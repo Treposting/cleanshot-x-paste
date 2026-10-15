@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a universal ShotPaste.app and packages it as build/ShotPaste-<version>.dmg
+# Builds a universal Marquee.app and packages it as build/Marquee-<version>.dmg
 # with the usual "drag to Applications" layout.
 set -euo pipefail
 
@@ -8,17 +8,17 @@ cd "$(dirname "$0")/.."
 UNIVERSAL="${UNIVERSAL:-1}" ./scripts/build-app.sh
 
 VERSION="$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)"
-DMG="build/ShotPaste-${VERSION}.dmg"
+DMG="build/Marquee-${VERSION}.dmg"
 STAGING="$(mktemp -d)"
 trap 'rm -rf "$STAGING"' EXIT
 
-cp -R build/ShotPaste.app "$STAGING/"
+cp -R build/Marquee.app "$STAGING/"
 ln -s /Applications "$STAGING/Applications"
 
 rm -f "$DMG"
 # hdiutil occasionally fails with "Resource busy" on CI machines; retry a few times.
 for attempt in 1 2 3; do
-  if hdiutil create -volname "ShotPaste" -srcfolder "$STAGING" -ov -format UDZO "$DMG"; then
+  if hdiutil create -volname "Marquee" -srcfolder "$STAGING" -ov -format UDZO "$DMG"; then
     break
   fi
   if [[ $attempt == 3 ]]; then

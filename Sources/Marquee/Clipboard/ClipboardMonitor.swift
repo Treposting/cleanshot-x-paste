@@ -42,7 +42,7 @@ final class ClipboardMonitor {
         timer = nil
     }
 
-    /// Call after ShotPaste itself writes to the pasteboard (e.g. pasting a
+    /// Call after Marquee itself writes to the pasteboard (e.g. pasting a
     /// history item) so the write is not recorded as a new entry.
     func ignoreCurrentContents() {
         lastChangeCount = NSPasteboard.general.changeCount

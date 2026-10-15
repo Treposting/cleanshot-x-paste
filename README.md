@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
-  <img src="docs/assets/banner-light.png" alt="ShotPaste: capture the screen, keep the clipboard" width="100%">
+  <img src="docs/assets/banner-light.png" alt="Marquee: capture the screen, keep the clipboard" width="100%">
 </picture>
 
 A free, open-source menu-bar app for macOS that takes screenshots and screen recordings, and remembers everything you copy.
@@ -26,7 +26,7 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 - [What's new in 0.2](#whats-new-in-02)
 - [Features](#features)
 - [Install](#install)
-- [Using ShotPaste](#using-shotpaste)
+- [Using Marquee](#using-marquee)
 - [Privacy](#privacy)
 - [Build from source](#build-from-source)
 - [Troubleshooting](#troubleshooting)
@@ -36,6 +36,8 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 - [License](#license)
 
 ## What's new in 0.2
+
+> **ShotPaste is now Marquee.** The app was renamed now that it covers capture, clipboard history and (soon) measuring. If you used ShotPaste 0.2.0, Marquee moves your clipboard history, settings and shortcuts over the first time it runs. macOS treats it as a new app, so it asks for Screen Recording and Accessibility again.
 
 - **Screen recording.** Record an area or the full screen to MP4, then save it as a GIF.
 - **Custom shortcuts.** Change every global shortcut in Settings.
@@ -72,22 +74,22 @@ See all [releases](https://github.com/Treposting/cleanshot-x-paste/releases).
 
 ## Install
 
-1. Download `ShotPaste-x.y.z.dmg` from the [latest release](https://github.com/Treposting/cleanshot-x-paste/releases/latest).
-2. Open the DMG and drag **ShotPaste** into **Applications**.
+1. Download `Marquee-x.y.z.dmg` from the [latest release](https://github.com/Treposting/cleanshot-x-paste/releases/latest).
+2. Open the DMG and drag **Marquee** into **Applications**.
 3. Releases aren't notarized by Apple yet, so the first launch needs one of these:
    - right-click the app and choose **Open**, or
-   - run `xattr -dr com.apple.quarantine /Applications/ShotPaste.app`.
+   - run `xattr -dr com.apple.quarantine /Applications/Marquee.app`.
 
-ShotPaste runs on **macOS 13 Ventura or later**. The DMG is a universal build, so it runs natively on Apple Silicon and Intel.
+Marquee runs on **macOS 13 Ventura or later**. The DMG is a universal build, so it runs natively on Apple Silicon and Intel.
 
 ### Permissions
 
 | Permission | Needed for | When macOS asks |
 |---|---|---|
-| **Screen & System Audio Recording** | Screenshots of other apps, screen recording, computer audio | On your first capture. Quit and reopen ShotPaste after allowing it. |
+| **Screen & System Audio Recording** | Screenshots of other apps, screen recording, computer audio | On your first capture. Quit and reopen Marquee after allowing it. |
 | **Accessibility** | Pasting a history item straight into the active app | The first time you paste from history. Without it, the item is copied and you press ⌘V yourself. |
 
-## Using ShotPaste
+## Using Marquee
 
 ### Global shortcuts
 
@@ -141,8 +143,8 @@ Drag to select. Press <kbd>↩</kbd> to record the whole screen instead, or <kbd
 ## Privacy
 
 - **No account and no network requests.** Captures and history never leave your Mac.
-- **Clipboard history** is stored in `~/Library/Application Support/ShotPaste/`. Clear it from the menu bar at any time; pinned items are kept.
-- **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`. ShotPaste never records those items.
+- **Clipboard history** is stored in `~/Library/Application Support/Marquee/`. Clear it from the menu bar at any time; pinned items are kept.
+- **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`. Marquee never records those items.
 - **Pause history** from the menu bar when you're copying something sensitive.
 
 ## Build from source
@@ -158,9 +160,9 @@ make run
 | Command | What it does |
 |---|---|
 | `make build` | Debug build with SwiftPM |
-| `make run` | Builds `build/ShotPaste.app` and opens it |
+| `make run` | Builds `build/Marquee.app` and opens it |
 | `make install` | Copies the app to `/Applications` |
-| `make dmg` | Universal build, packaged as `build/ShotPaste-<version>.dmg` |
+| `make dmg` | Universal build, packaged as `build/Marquee-<version>.dmg` |
 | `make clean` | Removes build output |
 
 You can also open `Package.swift` in Xcode and press Run.
@@ -181,7 +183,7 @@ The app has no third-party dependencies. It is built entirely on Apple framework
 <summary><b>Project layout</b></summary>
 
 ```
-Sources/ShotPaste/
+Sources/Marquee/
 ├── App/         Entry point, menu bar, global shortcuts, preferences
 ├── Capture/     Screenshots, Quick Access overlay, pinned windows, OCR
 ├── Record/      ScreenCaptureKit recorder, MP4 writer, area picker, GIF export
@@ -199,7 +201,7 @@ site/            Website (deployed to GitHub Pages)
 <details>
 <summary><b>Captures only show my desktop wallpaper</b></summary>
 
-ShotPaste doesn't have Screen Recording permission yet. Open **System Settings → Privacy & Security → Screen & System Audio Recording**, turn ShotPaste on, then quit and reopen it.
+Marquee doesn't have Screen Recording permission yet. Open **System Settings → Privacy & Security → Screen & System Audio Recording**, turn Marquee on, then quit and reopen it.
 </details>
 
 <details>
@@ -215,7 +217,7 @@ SIGN_IDENTITY="Your Certificate Name" make app
 <details>
 <summary><b>⇧⌘V no longer does "Paste and Match Style"</b></summary>
 
-ShotPaste uses that shortcut for clipboard history by default. Change it in **Settings → Shortcuts** if you'd rather keep the app's own shortcut.
+Marquee uses that shortcut for clipboard history by default. Change it in **Settings → Shortcuts** if you'd rather keep the app's own shortcut.
 </details>
 
 <details>
@@ -268,4 +270,4 @@ Pushing a `v*` tag by hand also works.
 
 [MIT](LICENSE).
 
-ShotPaste is an independent project. It is built only on public Apple APIs and contains no code or assets from any commercial app.
+Marquee is an independent project. It is built only on public Apple APIs and contains no code or assets from any commercial app.

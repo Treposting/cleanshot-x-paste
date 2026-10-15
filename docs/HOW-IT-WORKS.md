@@ -1,4 +1,4 @@
-# How CleanShot X and Paste work (and how ShotPaste does it)
+# How CleanShot X and Paste work (and how Marquee does it)
 
 This project is a **clean-room reimplementation**. We did not decompile, disassemble, or copy code or assets from either app. Their EULAs prohibit reverse engineering the binaries, and none of it is needed. Both apps are built on public macOS APIs, and their behavior can be seen from the outside and in their docs and reviews. This file records that behavior and the API each feature maps to.
 
@@ -13,7 +13,7 @@ This project is a **clean-room reimplementation**. We did not decompile, disasse
 
 ### How it maps to macOS APIs
 
-| Feature | API | ShotPaste |
+| Feature | API | Marquee |
 |---|---|---|
 | Global shortcuts | Carbon `RegisterEventHotKey`. Needs no permission and swallows the key event. | `App/HotKeyCenter.swift` |
 | Area/window/fullscreen capture | `ScreenCaptureKit` (`SCScreenshotManager`) or `CGWindowListCreateImage`, plus a custom selection overlay. The simpler route: Apple's `/usr/sbin/screencapture -i` provides the same crosshair UI. | `Capture/CaptureService.swift` uses `screencapture` |
@@ -38,12 +38,12 @@ This project is a **clean-room reimplementation**. We did not decompile, disasse
 
 ### How it maps to macOS APIs
 
-| Feature | API | ShotPaste |
+| Feature | API | Marquee |
 |---|---|---|
 | Detect clipboard changes | macOS has **no** change notification. Clipboard managers poll `NSPasteboard.general.changeCount` (every ~0.5 s) and read the new contents when it changes. | `Clipboard/ClipboardMonitor.swift` |
 | Source app | `NSWorkspace.shared.frontmostApplication` at the time of the change | same |
 | Privacy | The [nspasteboard.org](http://nspasteboard.org) convention: apps add `org.nspasteboard.ConcealedType` / `TransientType` markers, and clipboard managers skip those entries | same |
-| Storage | Local database plus image files | JSON + PNG files in `~/Library/Application Support/ShotPaste` (`ClipboardStore.swift`) |
+| Storage | Local database plus image files | JSON + PNG files in `~/Library/Application Support/Marquee` (`ClipboardStore.swift`) |
 | Panel that doesn't steal focus | Borderless `NSPanel` with `.nonactivatingPanel` and `canBecomeKey = true`. It gets keyboard input while the other app stays active. | `Clipboard/HistoryPanel.swift` |
 | Paste into the other app | Write the item to `NSPasteboard`, hide the panel, then post a synthetic ⌘V with `CGEvent`. Needs the **Accessibility** permission. | `Clipboard/Paster.swift` |
 | Avoid re-recording our own paste | After writing, store the new `changeCount` as "seen" | `ClipboardMonitor.ignoreCurrentContents()` |

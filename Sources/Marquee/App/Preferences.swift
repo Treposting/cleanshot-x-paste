@@ -25,6 +25,18 @@ enum Preferences {
             ?? FileManager.default.homeDirectoryForCurrentUser
     }
 
+    /// The app was called ShotPaste (bundle ID io.github.shotpaste) up to 0.2.0.
+    /// Copy its settings and shortcuts over the first time Marquee runs.
+    static func migrateLegacySettings() {
+        let migratedKey = "migratedFromShotPaste"
+        guard !defaults.bool(forKey: migratedKey) else { return }
+        defaults.set(true, forKey: migratedKey)
+        guard let legacy = defaults.persistentDomain(forName: "io.github.shotpaste") else { return }
+        for (key, value) in legacy where defaults.object(forKey: key) == nil {
+            defaults.set(value, forKey: key)
+        }
+    }
+
     static func registerDefaults() {
         defaults.register(defaults: [
             Key.showOverlay.rawValue: true,

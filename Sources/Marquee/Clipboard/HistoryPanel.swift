@@ -2,7 +2,7 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// Borderless panel that can take keyboard focus without activating ShotPaste,
+/// Borderless panel that can take keyboard focus without activating Marquee,
 /// so the app you were typing in stays frontmost and receives the paste.
 final class KeyablePanel: NSPanel {
     override var canBecomeKey: Bool { true }

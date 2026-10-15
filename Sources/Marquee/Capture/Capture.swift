@@ -60,7 +60,7 @@ final class Capture: ObservableObject, Identifiable {
             }
             return dest
         } catch {
-            NSLog("ShotPaste: save failed: \(error)")
+            NSLog("Marquee: save failed: \(error)")
             return nil
         }
     }
@@ -69,7 +69,7 @@ final class Capture: ObservableObject, Identifiable {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        let prefix = ext == "png" ? "ShotPaste" : "ShotPaste Recording"
+        let prefix = ext == "png" ? "Marquee" : "Marquee Recording"
         return "\(prefix) \(f.string(from: date))\(suffix).\(ext)"
     }
 

@@ -7,7 +7,7 @@ import ScreenCaptureKit
 /// `queue`, which is also the stream's sample-handler queue.
 final class RecordingOutput: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
     let url: URL
-    let queue = DispatchQueue(label: "ShotPaste.recording")
+    let queue = DispatchQueue(label: "Marquee.recording")
 
     /// Called (on `queue`) if the stream stops by itself, e.g. the display went away.
     var onStreamError: ((Error) -> Void)?
@@ -125,7 +125,7 @@ final class RecordingOutput: NSObject, SCStreamOutput, SCStreamDelegate, @unchec
         }
         await writer.finishWriting()
         if writer.status != .completed {
-            NSLog("ShotPaste: recording failed: \(String(describing: writer.error))")
+            NSLog("Marquee: recording failed: \(String(describing: writer.error))")
             return nil
         }
         return url

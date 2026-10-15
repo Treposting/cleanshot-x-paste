@@ -2,7 +2,7 @@ import AppKit
 import CryptoKit
 
 /// Persists clipboard history to
-/// ~/Library/Application Support/ShotPaste/{history.json, images/}.
+/// ~/Library/Application Support/Marquee/{history.json, images/}.
 @MainActor
 final class ClipboardStore: ObservableObject {
     @Published private(set) var items: [ClipItem] = []
@@ -15,7 +15,13 @@ final class ClipboardStore: ObservableObject {
     init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
-        directory = support.appendingPathComponent("ShotPaste", isDirectory: true)
+        directory = support.appendingPathComponent("Marquee", isDirectory: true)
+        // The app was called ShotPaste up to 0.2.0; carry its history over once.
+        let legacy = support.appendingPathComponent("ShotPaste", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: directory.path),
+           FileManager.default.fileExists(atPath: legacy.path) {
+            try? FileManager.default.moveItem(at: legacy, to: directory)
+        }
         imagesDirectory = directory.appendingPathComponent("images", isDirectory: true)
         try? FileManager.default.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
         load()
@@ -45,7 +51,7 @@ final class ClipboardStore: ObservableObject {
         do {
             try pngData.write(to: imagesDirectory.appendingPathComponent(name), options: .atomic)
         } catch {
-            NSLog("ShotPaste: could not store image: \(error)")
+            NSLog("Marquee: could not store image: \(error)")
             return
         }
         insert(ClipItem(kind: .image, imageName: name, contentHash: hash,
@@ -149,7 +155,7 @@ final class ClipboardStore: ObservableObject {
         do {
             items = try JSONDecoder().decode([ClipItem].self, from: data)
         } catch {
-            NSLog("ShotPaste: could not read history: \(error)")
+            NSLog("Marquee: could not read history: \(error)")
         }
     }
 
@@ -167,7 +173,7 @@ final class ClipboardStore: ObservableObject {
                     let data = try JSONEncoder().encode(snapshot)
                     try data.write(to: file, options: .atomic)
                 } catch {
-                    NSLog("ShotPaste: could not save history: \(error)")
+                    NSLog("Marquee: could not save history: \(error)")
                 }
             }
         }

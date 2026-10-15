@@ -4,7 +4,7 @@ Status: **planning**. Nothing here is built yet.
 
 ## Goal
 
-Add a measuring mode to ShotPaste that designers and front-end developers can use to check sizes, spacing and alignment of anything on screen, without opening a design tool. It should feel like the rest of ShotPaste: one shortcut, instant, keyboard-driven, and it hands results to the clipboard or to the Quick Access overlay.
+Add a measuring mode to Marquee that designers and front-end developers can use to check sizes, spacing and alignment of anything on screen, without opening a design tool. It should feel like the rest of Marquee: one shortcut, instant, keyboard-driven, and it hands results to the clipboard or to the Quick Access overlay.
 
 ## What PixelSnap does (publicly described behavior)
 
@@ -15,7 +15,7 @@ From the PixelSnap website, changelog and reviews:
 - **Guides.** Add horizontal and vertical guides to check alignment. It shows the distance between guides, and arrow keys nudge a guide.
 - **Hold and copy.** Keep measurements on screen, copy the numbers, or export the screen with the measurements drawn on it.
 
-We reimplement this behavior from scratch on public Apple APIs, the same way the rest of ShotPaste was built. No code or assets come from PixelSnap.
+We reimplement this behavior from scratch on public Apple APIs, the same way the rest of Marquee was built. No code or assets come from PixelSnap.
 
 ## User experience
 
@@ -41,10 +41,10 @@ When measure mode starts, grab one still image per display. Measuring a frozen i
 
 - macOS 14+: `SCScreenshotManager.captureImage(contentFilter:configuration:)` from ScreenCaptureKit.
 - macOS 13: a one-frame `SCStream` with the same filter. We already use `SCStream` for recording.
-- Exclude ShotPaste's own windows through `SCContentFilter(display:excludingApplications:…)`, as the recorder does.
+- Exclude Marquee's own windows through `SCContentFilter(display:excludingApplications:…)`, as the recorder does.
 - Capture at native resolution (`backingScaleFactor`), so 1 pt = 2 px on Retina.
 
-This needs the same Screen Recording permission ShotPaste already asks for.
+This needs the same Screen Recording permission Marquee already asks for.
 
 ### 2. Read pixels quickly
 
@@ -91,13 +91,13 @@ All of this lives in pure Swift functions with no AppKit, so it can be unit test
 ### New files
 
 ```
-Sources/ShotPaste/Measure/
+Sources/Marquee/Measure/
 ├── MeasureController.swift   Session lifecycle: freeze, show panels, keys, exit
 ├── ScreenSnapshot.swift      ScreenCaptureKit still capture → RGBA buffer
 ├── EdgeFinder.swift          Pure algorithms: hover distances, snap-to-bounds, guide snapping
 ├── MeasureOverlayView.swift  Layer-based drawing of lines, labels, guides
 └── Measurement.swift         Value types: distances, rectangles, guides, units
-Tests/ShotPasteTests/
+Tests/MarqueeTests/
 └── EdgeFinderTests.swift     Synthetic images: solid boxes, anti-aliased edges, gradients, shadows
 ```
 

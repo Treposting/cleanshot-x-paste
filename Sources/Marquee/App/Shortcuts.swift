@@ -112,11 +112,11 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
 /// Persists user-chosen shortcuts in UserDefaults ("shortcut.<action>").
 /// A missing value means "use the default"; "none" means the user cleared it.
 enum ShortcutStore {
-    static let didChange = Notification.Name("ShotPaste.shortcutsDidChange")
+    static let didChange = Notification.Name("Marquee.shortcutsDidChange")
     /// Posted while a recorder is listening, so global hotkeys can be suspended
     /// (otherwise the system would swallow an already-registered combo).
-    static let recordingWillBegin = Notification.Name("ShotPaste.shortcutRecordingWillBegin")
-    static let recordingDidEnd = Notification.Name("ShotPaste.shortcutRecordingDidEnd")
+    static let recordingWillBegin = Notification.Name("Marquee.shortcutRecordingWillBegin")
+    static let recordingDidEnd = Notification.Name("Marquee.shortcutRecordingDidEnd")
 
     private static var defaults: UserDefaults { .standard }
     private static func key(_ action: ShortcutAction) -> String { "shortcut.\(action.rawValue)" }

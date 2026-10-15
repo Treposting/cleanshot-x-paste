@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "ShotPaste",
+    name: "Marquee",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "ShotPaste",
-            path: "Sources/ShotPaste"
+            name: "Marquee",
+            path: "Sources/Marquee"
         )
     ]
 )

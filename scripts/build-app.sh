@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds ShotPaste.app into ./build.
+# Builds Marquee.app into ./build.
 #
 #   ./scripts/build-app.sh                       # release build for this Mac's CPU
 #   UNIVERSAL=1 ./scripts/build-app.sh           # Apple Silicon + Intel
@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 
 CONFIG="${CONFIG:-release}"
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
-APP="build/ShotPaste.app"
+APP="build/Marquee.app"
 
 ARCH_FLAGS=()
 if [[ "${UNIVERSAL:-0}" == "1" ]]; then
@@ -27,7 +27,7 @@ BIN_DIR="$(swift build -c "$CONFIG" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-b
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN_DIR/ShotPaste" "$APP/Contents/MacOS/ShotPaste"
+cp "$BIN_DIR/Marquee" "$APP/Contents/MacOS/Marquee"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
 # App icon (generated, so there are no binary assets in the repo).

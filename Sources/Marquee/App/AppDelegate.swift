@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var isStartingRecording = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Preferences.migrateLegacySettings()
         Preferences.registerDefaults()
         setupStatusItem()
         registerHotKeys()
@@ -73,7 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private static var idleIcon: NSImage? {
-        NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "ShotPaste")
+        NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Marquee")
     }
 
     private func rebuildMenu() {
@@ -94,7 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(item("Open Screenshots Folder", #selector(openFolder)))
         menu.addItem(item("Settings…", #selector(openSettings), key: ","))
         menu.addItem(.separator())
-        menu.addItem(item("Quit ShotPaste", #selector(quit), key: "q"))
+        menu.addItem(item("Quit Marquee", #selector(quit), key: "q"))
         mainMenu = menu
         if !recorder.isRecording {
             statusItem.menu = menu
@@ -156,7 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 styleMask: [.titled, .closable],
                 backing: .buffered, defer: false
             )
-            window.title = "ShotPaste Settings"
+            window.title = "Marquee Settings"
             window.isReleasedWhenClosed = false
             window.contentViewController = NSHostingController(rootView: SettingsView())
             window.center()
@@ -299,8 +300,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.informativeText = """
         \(error.localizedDescription)
 
-        ShotPaste needs the Screen Recording permission. Enable it in System Settings → \
-        Privacy & Security → Screen & System Audio Recording, then quit and reopen ShotPaste.
+        Marquee needs the Screen Recording permission. Enable it in System Settings → \
+        Privacy & Security → Screen & System Audio Recording, then quit and reopen Marquee.
         """
         alert.addButton(withTitle: "Open System Settings")
         alert.addButton(withTitle: "Cancel")

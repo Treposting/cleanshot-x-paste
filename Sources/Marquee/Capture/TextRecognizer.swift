@@ -18,7 +18,7 @@ enum TextRecognizer {
                     .compactMap { $0.topCandidates(1).first?.string }
                     .joined(separator: "\n")
             } catch {
-                NSLog("ShotPaste: OCR failed: \(error)")
+                NSLog("Marquee: OCR failed: \(error)")
             }
             Task { @MainActor in completion(text) }
         }
