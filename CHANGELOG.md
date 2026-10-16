@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.8 — 2026-10-17
+
 ### Added
 - **Clipboard history**: copied image and video files show a preview (Quick Look thumbnail) instead of the file icon. Videos get a play badge.
 
