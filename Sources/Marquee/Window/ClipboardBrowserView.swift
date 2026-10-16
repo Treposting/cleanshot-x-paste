@@ -92,6 +92,7 @@ struct ClipboardBrowserView: View {
                                 selected: false,
                                 thumbnail: thumbnail(for: item),
                                 appIcon: thumbnails.appIcon(bundleID: item.sourceBundleID),
+                                appColor: thumbnails.appColor(bundleID: item.sourceBundleID),
                                 fileIcon: item.filePaths?.first.map { thumbnails.fileIcon(path: $0) }
                             )
                             .onTapGesture(count: 2) { copy(item) }

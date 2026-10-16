@@ -28,4 +28,35 @@ final class PickedColorTests: XCTestCase {
         XCTAssertEqual(blue.string(in: .hex), "#0000FF")
         XCTAssertEqual(blue.string(in: .rgb), "rgb(0, 0, 255)")
     }
+
+    func testParsesHexForms() {
+        XCTAssertEqual(PickedColor(parsing: "#FFCF1A")?.hex, "#FFCF1A")
+        XCTAssertEqual(PickedColor(parsing: "  #ffcf1a\n")?.hex, "#FFCF1A")
+        XCTAssertEqual(PickedColor(parsing: "#0f8")?.hex, "#00FF88")
+        XCTAssertEqual(PickedColor(parsing: "#0f8c")?.hex, "#00FF88")
+        XCTAssertEqual(PickedColor(parsing: "#FFCF1A80")?.hex, "#FFCF1A")
+    }
+
+    func testParsesFunctionalForms() {
+        XCTAssertEqual(PickedColor(parsing: "rgb(255, 207, 26)")?.hex, "#FFCF1A")
+        XCTAssertEqual(PickedColor(parsing: "rgba(255 207 26 / 0.5)")?.hex, "#FFCF1A")
+        XCTAssertEqual(PickedColor(parsing: "rgb(100%, 0%, 0%)")?.hex, "#FF0000")
+        XCTAssertEqual(PickedColor(parsing: "hsl(240, 100%, 50%)")?.hex, "#0000FF")
+        XCTAssertEqual(PickedColor(parsing: "hsl(120deg 100% 25%)")?.hex, "#008000")
+        // What Marquee copies parses back to the same color.
+        let yellow = PickedColor(red: 1, green: 207.0 / 255, blue: 26.0 / 255)
+        XCTAssertEqual(PickedColor(parsing: yellow.rgb)?.hex, yellow.hex)
+    }
+
+    func testRejectsTextThatIsNotJustAColor() {
+        XCTAssertNil(PickedColor(parsing: "123456"))
+        XCTAssertNil(PickedColor(parsing: "#12345"))
+        XCTAssertNil(PickedColor(parsing: "#GGGGGG"))
+        XCTAssertNil(PickedColor(parsing: "Issue #123"))
+        XCTAssertNil(PickedColor(parsing: "#FFCF1A is the brand yellow"))
+        XCTAssertNil(PickedColor(parsing: "rgb(300, 0, 0)"))
+        XCTAssertNil(PickedColor(parsing: "rgb(1, 2)"))
+        XCTAssertNil(PickedColor(parsing: "calc(1 + 2 + 3)"))
+        XCTAssertNil(PickedColor(parsing: ""))
+    }
 }

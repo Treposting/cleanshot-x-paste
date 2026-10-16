@@ -92,6 +92,7 @@ struct HistoryView: View {
                             selected: index == model.selection,
                             thumbnail: thumbnail(for: item),
                             appIcon: thumbnails.appIcon(bundleID: item.sourceBundleID),
+                            appColor: thumbnails.appColor(bundleID: item.sourceBundleID),
                             fileIcon: item.filePaths?.first.map { thumbnails.fileIcon(path: $0) }
                         )
                         .id(item.id)
@@ -125,13 +126,26 @@ struct ClipCard: View {
     let selected: Bool
     let thumbnail: NSImage?
     let appIcon: NSImage?
+    /// The source app's icon color; the header uses it, or the item kind's color without one.
+    let appColor: PickedColor?
     let fileIcon: NSImage?
 
+    /// Text that is just a color (#FFCF1A, rgb(…), hsl(…)) gets a small swatch in front of it.
+    private var color: PickedColor? {
+        item.kind == .text ? item.text.flatMap(PickedColor.init(parsing:)) : nil
+    }
+
+    private var headerForeground: Color {
+        guard let appColor, appColor.luminance > 0.45 else { return .white }
+        return Color.black.opacity(0.8)
+    }
+
     var body: some View {
+        let color = self.color
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.kind.label).font(.system(size: 13, weight: .semibold))
+                    Text(color == nil ? item.kind.label : "Color").font(.system(size: 13, weight: .semibold))
                     Text(item.date, style: .relative).font(.system(size: 10)).opacity(0.85)
                 }
                 Spacer()
@@ -139,11 +153,17 @@ struct ClipCard: View {
                     Image(nsImage: appIcon).resizable().frame(width: 30, height: 30)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(headerForeground)
             .padding(10)
-            .background(item.kind.color.gradient)
+            .background(appColor.map { Color(nsColor: $0.nsColor).gradient } ?? item.kind.color.gradient)
 
-            content
+            Group {
+                if let color {
+                    ColorLine(color: color, text: item.text ?? "")
+                } else {
+                    content
+                }
+            }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(10)
 
@@ -209,6 +229,10 @@ struct ClipCard: View {
     }
 
     private var footer: String {
+        if let color {
+            let text = (item.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.hasPrefix("#") ? color.rgb : color.hex
+        }
         switch item.kind {
         case .text, .link:
             return "\(item.text?.count ?? 0) characters"
@@ -218,5 +242,26 @@ struct ClipCard: View {
             let n = item.filePaths?.count ?? 0
             return n == 1 ? "1 file" : "\(n) files"
         }
+    }
+}
+
+/// A copied color: a small swatch in front of the text.
+private struct ColorLine: View {
+    let color: PickedColor
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(Color(nsColor: color.nsColor))
+                .overlay(RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.2), lineWidth: 0.5))
+                .frame(width: 12, height: 12)
+                .accessibilityHidden(true)
+            Text(text.trimmingCharacters(in: .whitespacesAndNewlines))
+                .font(.system(size: 12))
+                .lineLimit(2)
+        }
+        .accessibilityElement(children: .combine)
     }
 }

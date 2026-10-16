@@ -130,6 +130,8 @@ Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar app
 ### Clipboard history
 
 - **Remembers** text, links, images and files, along with the app each one came from.
+- **Color swatches.** Copy a color like `#FFCF1A`, `rgb(255, 207, 26)` or `hsl(47, 100%, 55%)` and its card shows a small swatch in front of it.
+- **Cards in the source app's color.** Each card's header takes the main color of the app it came from.
 - **Opens with ⇧⌘V** as a panel along the bottom of the screen. Type to search, or filter by type.
 - **Pastes into the app you were using**, which stays in front the whole time.
 - **Pin** items you reuse. Duplicates move to the front instead of piling up.

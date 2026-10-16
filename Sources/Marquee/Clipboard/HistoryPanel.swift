@@ -203,6 +203,8 @@ final class HistoryPanelController: NSObject, NSWindowDelegate {
 final class ThumbnailCache {
     private let images = NSCache<NSString, NSImage>()
     private let icons = NSCache<NSString, NSImage>()
+    /// Main color of each source app's icon; `nil` entries mean no usable color.
+    private var appColors: [String: PickedColor?] = [:]
 
     func thumbnail(for url: URL) -> NSImage? {
         let key = url.path as NSString
@@ -226,6 +228,15 @@ final class ThumbnailCache {
         let icon = NSWorkspace.shared.icon(forFile: url.path)
         icons.setObject(icon, forKey: bundleID as NSString)
         return icon
+    }
+
+    /// The source app's icon color, used to tint its clipboard cards.
+    func appColor(bundleID: String?) -> PickedColor? {
+        guard let bundleID else { return nil }
+        if let cached = appColors[bundleID] { return cached }
+        let color = appIcon(bundleID: bundleID).flatMap(IconColor.dominant(in:))
+        appColors[bundleID] = color
+        return color
     }
 
     func fileIcon(path: String) -> NSImage {

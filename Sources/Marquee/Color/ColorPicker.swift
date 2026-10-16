@@ -65,6 +65,75 @@ struct PickedColor: Codable, Identifiable, Hashable {
         case .swiftUI: return swiftUI
         }
     }
+
+    /// Relative luminance (WCAG), used to pick readable text on top of the color.
+    var luminance: Double {
+        func linear(_ c: Double) -> Double { c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+        return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+    }
+
+    /// Reads text that is just a color: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`, `rgb()`/`rgba()`
+    /// or `hsl()`/`hsla()`. Anything else, including bare digits without `#`, returns nil.
+    /// Alpha is accepted but ignored.
+    init?(parsing text: String) {
+        let s = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !s.isEmpty, s.count <= 40 else { return nil }
+        if s.hasPrefix("#") {
+            let digits = Array(s.dropFirst())
+            guard [3, 4, 6, 8].contains(digits.count), digits.allSatisfy(\.isHexDigit) else { return nil }
+            let channels: [Double]
+            if digits.count <= 4 {
+                channels = digits.prefix(3).map { Double(Int(String([$0, $0]), radix: 16) ?? 0) / 255 }
+            } else {
+                channels = stride(from: 0, to: 6, by: 2).map {
+                    Double(Int(String(digits[$0...$0 + 1]), radix: 16) ?? 0) / 255
+                }
+            }
+            self.init(red: channels[0], green: channels[1], blue: channels[2])
+            return
+        }
+        guard let open = s.firstIndex(of: "("), s.hasSuffix(")") else { return nil }
+        let function = s[..<open].trimmingCharacters(in: .whitespaces)
+        let parts = s[s.index(after: open)..<s.index(before: s.endIndex)]
+            .split(whereSeparator: { $0 == "," || $0 == " " || $0 == "/" })
+            .map(String.init)
+        guard parts.count == 3 || parts.count == 4 else { return nil }
+        func number(_ part: String) -> Double? {
+            Double(part.hasSuffix("%") ? String(part.dropLast()) : part)
+        }
+        switch function {
+        case "rgb", "rgba":
+            var channels: [Double] = []
+            for part in parts.prefix(3) {
+                guard let value = number(part) else { return nil }
+                let unit = part.hasSuffix("%") ? value / 100 : value / 255
+                guard (0...1).contains(unit) else { return nil }
+                channels.append(unit)
+            }
+            self.init(red: channels[0], green: channels[1], blue: channels[2])
+        case "hsl", "hsla":
+            guard let hue = number(parts[0].replacingOccurrences(of: "deg", with: "")),
+                  let saturation = number(parts[1]), let lightness = number(parts[2]),
+                  (0...100).contains(saturation), (0...100).contains(lightness) else { return nil }
+            let h = (hue.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) / 60
+            let sat = saturation / 100, light = lightness / 100
+            let chroma = (1 - abs(2 * light - 1)) * sat
+            let x = chroma * (1 - abs(h.truncatingRemainder(dividingBy: 2) - 1))
+            let (r, g, b): (Double, Double, Double)
+            switch h {
+            case ..<1: (r, g, b) = (chroma, x, 0)
+            case ..<2: (r, g, b) = (x, chroma, 0)
+            case ..<3: (r, g, b) = (0, chroma, x)
+            case ..<4: (r, g, b) = (0, x, chroma)
+            case ..<5: (r, g, b) = (x, 0, chroma)
+            default: (r, g, b) = (chroma, 0, x)
+            }
+            let m = light - chroma / 2
+            self.init(red: r + m, green: g + m, blue: b + m)
+        default:
+            return nil
+        }
+    }
 }
 
 enum ColorFormat: String, CaseIterable, Identifiable, Codable {
