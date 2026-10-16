@@ -19,7 +19,7 @@ Status as of v0.5.8 (2026-10-17). Project context and conventions are in [CLAUDE
 - [x] Recording toolbar; instant start or 3/5/10 s countdown; blinking menu-bar timer; GIF export
 
 **Tools**
-- [x] Measure (macOS 14+): distances, snap to element, keep, copy, capture; points/pixels
+- [x] Measure (macOS 14+): distances, snap to element, keep, copy, capture; points/pixels; guides (H/V, snap, drag, arrow-key nudging, gaps); every display at once
 - [x] Color picker: HEX / RGB / HSL / SwiftUI, 48-color history
 
 **Clipboard**
@@ -52,6 +52,7 @@ Built and passing CI, but not yet tried by hand:
 - [ ] Recording a window with WindowPicker (highlight follows the pointer; multi-display)
 - [ ] Permissions persist from 0.5.5 → 0.5.6 → next release
 - [ ] Fix Permissions / Restart Marquee on the Permissions page (relaunch rewritten for #6)
+- [ ] Measure guides (H/V, drag, arrows, Tab, ⌫) and measuring on two displays at once
 - [ ] Color picker from the menu bar, a shortcut, Home and All-in-One: clicks and Esc work
 
 ## Next up
@@ -61,7 +62,6 @@ Built and passing CI, but not yet tried by hand:
 
 ## Backlog
 
-- [ ] Measure guides with arrow-key nudging; measuring across multiple displays (see docs/plans/MEASURE.md)
 - [ ] Webcam overlay in recordings
 - [ ] Scrolling capture
 - [ ] Rich text (RTF/HTML) in clipboard history

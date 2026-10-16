@@ -4,6 +4,10 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Added
+- **Measure guides**: press H or V to add a horizontal or vertical guide at the pointer. Guides snap to nearby edges, show the distance between neighbouring guides, and move with a drag or the arrow keys (⇧ for 10 pt). Tab selects the next guide, ⌫ removes it.
+- **Measure on every display**: all displays freeze and can be measured at once. Keys go to the display under the pointer.
+
 ## 0.5.8 — 2026-10-17
 
 ### Added

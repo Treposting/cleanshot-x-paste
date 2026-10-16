@@ -279,8 +279,12 @@ private struct MeasureSettings: View {
     private let keys: [KeyRow] = [
         KeyRow(action: "Distances to the nearest edges", keys: "Move the pointer"),
         KeyRow(action: "Snap to an element", keys: "Drag around it"),
+        KeyRow(action: "Add a horizontal or vertical guide", keys: "H / V"),
+        KeyRow(action: "Move a guide", keys: "Drag it"),
+        KeyRow(action: "Nudge the selected guide", keys: "Arrow keys (⇧: 10 pt)"),
+        KeyRow(action: "Select the next guide", keys: "Tab"),
         KeyRow(action: "Keep a measurement on screen", keys: "Space"),
-        KeyRow(action: "Clear kept measurements", keys: "⌫"),
+        KeyRow(action: "Remove the guide, or clear kept measurements", keys: "⌫"),
         KeyRow(action: "Show pixels instead of points", keys: "Hold ⇧"),
         KeyRow(action: "Copy the last measurement", keys: "⌘C"),
         KeyRow(action: "Capture the screen with measurements", keys: "⌘S"),

@@ -1,18 +1,19 @@
 import AppKit
 
-/// Starts and ends measure mode: freezes the display under the mouse, shows the
-/// measuring overlay on it, and hands exported measurements to Quick Access.
+/// Starts and ends measure mode: freezes every display, shows a measuring overlay on
+/// each one, and hands exported measurements to Quick Access. Keys go to the display
+/// under the pointer; Esc or the shortcut ends measuring everywhere.
 @MainActor
 final class MeasureController {
     static let shared = MeasureController()
 
-    private var window: NSWindow?
+    private var windows: [NSWindow] = []
     private var isStarting = false
 
-    var isActive: Bool { window != nil || isStarting }
+    var isActive: Bool { !windows.isEmpty || isStarting }
 
     func toggle() {
-        if window != nil {
+        if !windows.isEmpty {
             close()
         } else {
             start()
@@ -20,9 +21,9 @@ final class MeasureController {
     }
 
     private func start() {
-        guard !isStarting, let screen = NSScreen.underMouse else { return }
+        guard !isStarting, !NSScreen.screens.isEmpty else { return }
         if #available(macOS 14.0, *) {
-            begin(on: screen)
+            begin(on: NSScreen.screens)
         } else {
             let alert = NSAlert()
             alert.messageText = "Measure needs macOS 14 Sonoma or later"
@@ -33,17 +34,36 @@ final class MeasureController {
     }
 
     @available(macOS 14.0, *)
-    private func begin(on screen: NSScreen) {
+    private func begin(on screens: [NSScreen]) {
         isStarting = true
         Task {
             defer { isStarting = false }
-            do {
-                let image = try await ScreenSnapshot.capture(screen: screen)
-                guard let pixels = PixelBuffer(image: image) else { return }
-                present(image: image, pixels: pixels, on: screen)
-            } catch {
-                showPermissionAlert(error)
+            // Freeze every display first, then show all overlays together. A display that
+            // can't be captured is skipped; the alert only shows when none could be.
+            var snapshots: [(NSScreen, CGImage, PixelBuffer)] = []
+            var failure: Error?
+            for screen in screens {
+                do {
+                    let image = try await ScreenSnapshot.capture(screen: screen)
+                    guard let pixels = PixelBuffer(image: image) else { continue }
+                    snapshots.append((screen, image, pixels))
+                } catch {
+                    failure = failure ?? error
+                }
             }
+            guard !snapshots.isEmpty else {
+                if let failure { showPermissionAlert(failure) }
+                return
+            }
+            for (screen, image, pixels) in snapshots {
+                present(image: image, pixels: pixels, on: screen)
+            }
+            // Keys start on the display under the pointer.
+            let pointerScreen = NSScreen.underMouse?.frame
+            let active = windows.first { $0.frame == pointerScreen } ?? windows.first
+            NSApp.activate(ignoringOtherApps: true)
+            active?.makeKeyAndOrderFront(nil)
+            active?.makeFirstResponder(active?.contentView)
         }
     }
 
@@ -71,16 +91,13 @@ final class MeasureController {
             self?.deliver(image)
         }
         window.contentView = view
-
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.makeFirstResponder(view)
-        self.window = window
+        window.orderFrontRegardless()
+        windows.append(window)
     }
 
     func close() {
-        window?.orderOut(nil)
-        window = nil
+        windows.forEach { $0.orderOut(nil) }
+        windows.removeAll()
     }
 
     /// ⌘S: the frozen screen with measurements drawn on it becomes a normal capture.

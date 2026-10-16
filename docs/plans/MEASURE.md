@@ -1,6 +1,6 @@
 # Plan: Measure (PixelSnap-style screen ruler)
 
-Status: **milestones 1–3 built** on `main` (distances, snap, keep/copy/capture). Guides (milestone 4) and multi-display measuring are next.
+Status: **milestones 1–4 built** on `main` (distances, snap, keep/copy/capture, guides) and every display is measured at once. Guides are added with H / V at the pointer rather than from ruler edges (Measure has no rulers); see `Measure/Guides.swift`.
 
 Decisions taken: the shortcut toggles measure mode; the screen is frozen; values are in points (hold ⇧ for pixels); the default shortcut is ⌥⇧⌘M; Measure requires macOS 14 because it uses `SCScreenshotManager`.
 

@@ -119,6 +119,8 @@ Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar app
 - **Distances.** Point anywhere and see the distance to the nearest edge in every direction, like a designer's ruler.
 - **Snap to element.** Drag a box around a button, an icon or a block of text and it shrinks to the element's exact size.
 - **Keep, copy, capture.** Space keeps a measurement on screen, ⌘C copies `140 × 48`, and ⌘S sends the screen with your measurements to the Quick Access overlay.
+- **Guides.** Press H or V to add a horizontal or vertical guide at the pointer. Guides snap to nearby edges, show the distance between them, and move with a drag or the arrow keys (⇧ for 10 pt).
+- **Every display.** All your displays freeze and can be measured at once.
 - **Points or pixels.** Sizes are in points; hold ⇧ to see pixels.
 
 ### Color picker
@@ -196,8 +198,12 @@ Out of the box only two shortcuts are set: **All-in-One** (<kbd>⌥</kbd><kbd>�
 |---|---|
 | Move the pointer | Distances to the nearest edges |
 | Drag | Snap to the element inside the box |
+| <kbd>H</kbd> / <kbd>V</kbd> | Add a horizontal or vertical guide at the pointer |
+| Drag a guide | Move it (snaps to nearby edges) |
+| <kbd>←</kbd> <kbd>→</kbd> / <kbd>↑</kbd> <kbd>↓</kbd> | Nudge the selected guide 1 pt (<kbd>⇧</kbd>: 10 pt) |
+| <kbd>Tab</kbd> | Select the next guide |
 | <kbd>Space</kbd> | Keep the current measurement on screen |
-| <kbd>⌫</kbd> | Clear kept measurements |
+| <kbd>⌫</kbd> | Remove the selected guide, or clear kept measurements |
 | Hold <kbd>⇧</kbd> | Show pixels instead of points |
 | <kbd>⌘</kbd><kbd>C</kbd> | Copy the last measurement |
 | <kbd>⌘</kbd><kbd>S</kbd> | Capture the screen with measurements |
@@ -278,7 +284,7 @@ Turn off automatic checks in **Settings → Capture → Updates**. Updates only 
 - [x] Measure: distances, snap to element, keep, copy, capture
 - [x] In-app updates from GitHub Releases
 - [x] App window, onboarding, All-in-One and color picker
-- [ ] Measure guides with arrow-key nudging, and multiple displays at once
+- [x] Measure guides with arrow-key nudging, and multiple displays at once
 - [x] Microphone and desktop audio in recordings
 - [ ] Webcam overlay in recordings
 - [ ] Scrolling capture

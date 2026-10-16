@@ -70,4 +70,6 @@ A screenshot copied by the capture side lands on the pasteboard. The history sid
 | Read pixels | Draw the `CGImage` into an RGBA `CGContext` | `PixelBuffer` |
 | Find edges | Walk from the pointer until the color changes beyond a tolerance; snap by trimming the background color | `Measure/EdgeFinder.swift` (unit tested) |
 | Draw | Core Animation layers over the frozen image | `Measure/MeasureView.swift` |
+| Guides | Positions kept as pixel boundaries; snap to the nearest edge from the same walk; gaps between neighbours | `Measure/Guides.swift` (unit tested) |
+| Every display | One frozen snapshot and one window per display; the window under the pointer takes the keys | `Measure/MeasureController.swift` |
 
