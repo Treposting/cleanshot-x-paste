@@ -10,7 +10,7 @@ final class AreaSelector {
     private let screen: NSScreen
     private let completion: @MainActor ((NSScreen, CGRect)?) -> Void
 
-    static let recordHint = "Drag to select an area to record  ·  Return: whole screen  ·  Esc: cancel"
+    nonisolated static let recordHint = "Drag to select an area to record  ·  Return: whole screen  ·  Esc: cancel"
 
     static func select(
         hint: String = recordHint,

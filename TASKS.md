@@ -35,6 +35,7 @@ Status as of v0.5.6 (2026-10-16). Project context and conventions are in [CLAUDE
 - [x] In-app updates from GitHub Releases (verified signature, swap on restart)
 - [x] Stable self-signed release signing (from 0.5.5) so permissions survive updates; Permissions page with Fix Permissions (tccutil reset) and Restart Marquee
 - [x] Release workflow, universal DMG + zip, CI with tests
+- [x] Unreleased: Home redesign; menu-bar icon choice (symbols or your own image); copy/paste sounds; color picker no longer freezes input; Restart Marquee relaunches reliably (#6); build has no warnings
 
 **Project**
 - [x] Issue updates bot: progress, fixed and released comments plus labels, driven by commit messages and the Release workflow
@@ -50,15 +51,13 @@ Built and passing CI, but not yet tried by hand:
 - [ ] All-in-One: no crash when dragging; toolbar visible; ▾ menus open in the non-activating panel; ⌘C copies the area; F/W/⇧F/⇧W
 - [ ] Recording a window with WindowPicker (highlight follows the pointer; multi-display)
 - [ ] Permissions persist from 0.5.5 → 0.5.6 → next release
-- [ ] Fix Permissions / Restart Marquee on the Permissions page
+- [ ] Fix Permissions / Restart Marquee on the Permissions page (relaunch rewritten for #6)
+- [ ] Color picker from the menu bar, a shortcut, Home and All-in-One: clicks and Esc work
 
 ## Next up
 
-1. **Fix two compiler warnings** (small, also prepares for Swift 6)
-   - `Window/LibraryView.swift` `LibraryThumbnail.thumbnail(at:)`: returns `NSImage` from `Task.detached`, but `NSImage` is only `Sendable` from macOS 14. Return a `CGImage` (or `Data`) from the detached task and build the `NSImage` on the main actor.
-   - `Record/AreaSelector.swift`: `static let recordHint` is main-actor isolated but used as a default argument. Mark it `nonisolated static let` (it's a constant string).
-2. **Custom domain**: point marquee.nahid.bd at GitHub Pages: add `site/CNAME` containing `marquee.nahid.bd`, update links in README / site / `video/demo.html` if the canonical URL changes. Needs a DNS CNAME `marquee → treposting.github.io` at the domain provider.
-3. **Social versions of the demo**: square (1080×1080) and vertical (1080×1920) renders. Make `video/demo.html` size-aware or add a layout per format.
+1. **Custom domain**: point marquee.nahid.bd at GitHub Pages: add `site/CNAME` containing `marquee.nahid.bd`, update links in README / site / `video/demo.html` if the canonical URL changes. Needs a DNS CNAME `marquee → treposting.github.io` at the domain provider.
+2. **Social versions of the demo**: square (1080×1080) and vertical (1080×1920) renders. Make `video/demo.html` size-aware or add a layout per format.
 
 ## Backlog
 

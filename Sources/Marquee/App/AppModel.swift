@@ -17,9 +17,10 @@ final class AppModel {
     }
 
     /// Runs an action. Capture-type actions hide the Marquee window first so it isn't
-    /// in the screenshot, recording or measurement.
+    /// in the screenshot, recording or measurement. The color picker keeps it: hiding it
+    /// makes Marquee inactive, and the magnifier only gets clicks while Marquee is active.
     func perform(_ action: ShortcutAction) {
-        guard action != .clipboardHistory else {
+        guard action != .clipboardHistory, action != .pickColor else {
             performHandler?(action)
             return
         }

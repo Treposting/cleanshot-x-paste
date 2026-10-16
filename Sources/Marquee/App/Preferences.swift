@@ -24,6 +24,9 @@ enum Preferences {
         case hasCompletedOnboarding
         case keepLibrary
         case skippedVersion
+        case menuBarIcon
+        case menuBarIconTemplate
+        case copyPasteSound
     }
 
     static var defaults: UserDefaults { .standard }
@@ -66,6 +69,9 @@ enum Preferences {
             Key.autoCheckUpdates.rawValue: true,
             Key.hasCompletedOnboarding.rawValue: false,
             Key.keepLibrary.rawValue: true,
+            Key.menuBarIcon.rawValue: "camera.viewfinder",
+            Key.menuBarIconTemplate.rawValue: true,
+            Key.copyPasteSound.rawValue: true,
         ])
     }
 
@@ -73,6 +79,8 @@ enum Preferences {
     static var copyAfterCapture: Bool { defaults.bool(forKey: Key.copyAfterCapture.rawValue) }
     static var saveAfterCapture: Bool { defaults.bool(forKey: Key.saveAfterCapture.rawValue) }
     static var playSound: Bool { defaults.bool(forKey: Key.playSound.rawValue) }
+    /// A short sound when Marquee copies something or pastes from clipboard history.
+    static var copyPasteSound: Bool { defaults.bool(forKey: Key.copyPasteSound.rawValue) }
     static var windowShadow: Bool { defaults.bool(forKey: Key.windowShadow.rawValue) }
     static var overlayTimeout: Int { defaults.integer(forKey: Key.overlayTimeout.rawValue) }
     static var historyLimit: Int { max(10, defaults.integer(forKey: Key.historyLimit.rawValue)) }
@@ -106,6 +114,14 @@ enum Preferences {
     static var autoCheckUpdates: Bool { defaults.bool(forKey: Key.autoCheckUpdates.rawValue) }
     /// Keep a copy of every screenshot and recording in the Library.
     static var keepLibrary: Bool { defaults.bool(forKey: Key.keepLibrary.rawValue) }
+
+    /// An SF Symbol name from `MenuBarIcon.presets`, or `MenuBarIcon.customChoice`.
+    static var menuBarIcon: String {
+        get { defaults.string(forKey: Key.menuBarIcon.rawValue) ?? "camera.viewfinder" }
+        set { defaults.set(newValue, forKey: Key.menuBarIcon.rawValue) }
+    }
+    /// Draw a custom menu-bar image in the menu bar's color instead of its own colors.
+    static var menuBarIconTemplate: Bool { defaults.bool(forKey: Key.menuBarIconTemplate.rawValue) }
 
     static var hasCompletedOnboarding: Bool {
         get { defaults.bool(forKey: Key.hasCompletedOnboarding.rawValue) }

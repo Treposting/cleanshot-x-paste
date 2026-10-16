@@ -4,6 +4,18 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Added
+- **Menu bar icon**: choose a different symbol or your own image in Settings → Capture. Your image can take the menu bar's color or keep its own.
+- **Copy and paste sounds**: a short sound when Marquee copies something or pastes from clipboard history. Turn it off in Settings → Capture.
+
+### Changed
+- **Home** is redesigned: All-in-One up front with its shortcut, your latest capture next to it, and every other action in compact rows.
+
+### Fixed
+- **Picking a color could freeze the screen**: the magnifier showed while another app was active, so clicks and Esc never reached it. Marquee now makes itself active first.
+- **Restart Marquee** on the Permissions page quit Marquee without opening it again ([#6](https://github.com/Treposting/marquee/issues/6)).
+- When Screen Recording is missing, the recording and Measure alerts now open Marquee's Permissions page, where Fix Permissions clears entries left by older versions.
+
 ## 0.5.6 — 2026-10-15
 
 ### Added

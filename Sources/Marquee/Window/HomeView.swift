@@ -50,8 +50,12 @@ extension ShortcutAction {
         case .clipboardHistory: return "Clipboard"
         }
     }
+
+    var isRecording: Bool { self == .recordArea || self == .recordScreen }
 }
 
+/// The first page of the Marquee window: All-in-One up front, the latest capture next to it,
+/// every other action in compact rows, then recent captures.
 @MainActor
 struct HomeView: View {
     @ObservedObject var navigation: MainNavigation
@@ -66,7 +70,7 @@ struct HomeView: View {
     }
 
     private let groups: [ActionGroup] = [
-        ActionGroup(title: "Capture", actions: [.allInOne, .captureArea, .captureWindow, .captureFullscreen, .captureTimed, .captureText]),
+        ActionGroup(title: "Capture", actions: [.captureArea, .captureWindow, .captureFullscreen, .captureTimed, .captureText]),
         ActionGroup(title: "Record", actions: [.recordArea, .recordScreen]),
         ActionGroup(title: "Tools", actions: [.measure, .pickColor, .clipboardHistory]),
     ]
@@ -77,27 +81,30 @@ struct HomeView: View {
                 header
 
                 if !permissions.screenRecording {
-                    PermissionBanner {
-                        navigation.section = .permissions
-                    }
+                    PermissionBanner { navigation.section = .permissions }
                 }
+
+                HStack(alignment: .top, spacing: 14) {
+                    AllInOneCard(version: shortcutsVersion)
+                    LatestCaptureCard(item: library.items.first, revision: library.revision) {
+                        navigation.section = .library
+                    }
+                    .frame(width: 236)
+                }
+                .fixedSize(horizontal: false, vertical: true)
 
                 ForEach(groups) { group in
                     VStack(alignment: .leading, spacing: 10) {
-                        Text(group.title)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 12)], spacing: 12) {
+                        SectionTitle(group.title)
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), spacing: 10)], spacing: 10) {
                             ForEach(group.actions) { action in
-                                ActionTile(action: action, version: shortcutsVersion)
+                                ActionRow(action: action, version: shortcutsVersion)
                             }
                         }
                     }
                 }
 
-                if !library.items.isEmpty {
-                    recent
-                }
+                recent
             }
             .padding(28)
             .frame(maxWidth: 980, alignment: .leading)
@@ -111,38 +118,48 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
-                .frame(width: 52, height: 52)
+                .frame(width: 40, height: 40)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Marquee").font(.system(size: 26, weight: .bold))
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Marquee")
+                    .font(.system(size: 22, weight: .bold))
+                    .accessibilityAddTraits(.isHeader)
                 Text("Capture, record, measure, and keep everything you copy.")
+                    .font(.system(size: 13))
                     .foregroundStyle(.secondary)
             }
         }
     }
 
+    @ViewBuilder
     private var recent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Recent captures")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Show All") { navigation.section = .library }
-                    .buttonStyle(.link)
-            }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(library.items.prefix(8)) { item in
-                        LibraryThumbnail(item: item, revision: library.revision)
-                            .frame(width: 168, height: 105)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .onTapGesture(count: 2) { library.open(item) }
-                            .contextMenu { LibraryItemMenu(item: item) }
-                            .help(item.date.formatted(date: .abbreviated, time: .shortened))
+        let items = Array(library.items.dropFirst().prefix(8))
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    SectionTitle("Earlier captures")
+                    Spacer()
+                    Button("Show All") { navigation.section = .library }
+                        .buttonStyle(.link)
+                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(items) { item in
+                            LibraryThumbnail(item: item, revision: library.revision)
+                                .frame(width: 150, height: 94)
+                                .background(Color.primary.opacity(0.04))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(Color.primary.opacity(0.08)))
+                                .onTapGesture(count: 2) { library.open(item) }
+                                .contextMenu { LibraryItemMenu(item: item) }
+                                .help(item.date.formatted(date: .abbreviated, time: .shortened))
+                                .accessibilityLabel(item.isVideo ? "Recording" : "Screenshot")
+                                .accessibilityValue(item.date.formatted(date: .abbreviated, time: .shortened))
+                        }
                     }
                 }
             }
@@ -150,81 +167,250 @@ struct HomeView: View {
     }
 }
 
-private struct ActionTile: View {
+private struct SectionTitle: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The one primary action on Home: All-in-One reaches every capture.
+@MainActor
+private struct AllInOneCard: View {
+    let version: Int
+    private let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: ShortcutAction.allInOne.symbol)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 42, height: 42)
+                    .background(Color.accentColor.gradient, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("All-in-One")
+                        .font(.system(size: 17, weight: .semibold))
+                    Text("Select an area, then screenshot, record, copy, pin or read its text.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+            HStack(spacing: 12) {
+                Button {
+                    AppModel.shared.perform(.allInOne)
+                } label: {
+                    Label("Start All-in-One", systemImage: "viewfinder")
+                        .padding(.horizontal, 4)
+                }
+                .glassButtonStyle(prominent: true)
+                .controlSize(.large)
+                if let combo = ShortcutStore.combo(for: .allInOne) {
+                    KeyCaps(combo: combo)
+                    Text("from anywhere")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .id(version)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+        .background(
+            LinearGradient(colors: [Color.accentColor.opacity(0.16), Color.accentColor.opacity(0.05)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: shape
+        )
+        .overlay(shape.strokeBorder(Color.accentColor.opacity(0.25)))
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// The newest capture, so the last thing you took is one click away.
+@MainActor
+private struct LatestCaptureCard: View {
+    let item: LibraryItem?
+    let revision: Int
+    let showLibrary: @MainActor () -> Void
+    private let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Latest capture")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let item {
+                    Text(item.date.formatted(.relative(presentation: .named)))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            if let item {
+                LibraryThumbnail(item: item, revision: revision)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 96)
+                    .background(Color.primary.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .onTapGesture(count: 2) { CaptureLibrary.shared.open(item) }
+                    .contextMenu { LibraryItemMenu(item: item) }
+                    .accessibilityLabel(item.isVideo ? "Latest recording" : "Latest screenshot")
+                HStack(spacing: 6) {
+                    Button("Copy") { CaptureLibrary.shared.copy(item) }
+                    Button("Open") { CaptureLibrary.shared.open(item) }
+                    Spacer(minLength: 0)
+                    Button("Library", action: showLibrary)
+                        .buttonStyle(.link)
+                }
+                .controlSize(.small)
+            } else {
+                Spacer(minLength: 0)
+                VStack(spacing: 6) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundStyle(.tertiary)
+                    Text("Your captures show up here")
+                        .font(.system(size: 12, weight: .medium))
+                    Text("Take a screenshot or recording to start.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(14)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color.primary.opacity(0.035), in: shape)
+        .overlay(shape.strokeBorder(Color.primary.opacity(0.08)))
+    }
+}
+
+/// A compact row for one action: icon, name, what it does, and its shortcut if it has one.
+private struct ActionRow: View {
     let action: ShortcutAction
     let version: Int
-    @State private var hovering = false
 
     var body: some View {
         Button {
             AppModel.shared.perform(action)
         } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top) {
-                    Image(systemName: action.symbol)
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(action == .recordArea || action == .recordScreen ? Color.red : Color.accentColor)
-                        .frame(width: 38, height: 38)
-                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    Spacer()
-                    if let combo = ShortcutStore.combo(for: action) {
-                        Text(combo.displayString)
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 5))
-                    }
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(action.tileTitle).font(.system(size: 14, weight: .semibold))
+            HStack(spacing: 12) {
+                Image(systemName: action.symbol)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(action.isRecording ? Color.red : Color.accentColor)
+                    .frame(width: 34, height: 34)
+                    .background((action.isRecording ? Color.red : Color.accentColor).opacity(0.12),
+                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(action.tileTitle)
+                        .font(.system(size: 13, weight: .semibold))
                     Text(action.subtitle)
-                        .font(.system(size: 12))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 6)
+                if let combo = ShortcutStore.combo(for: action) {
+                    KeyCaps(combo: combo)
                 }
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, minHeight: 118, alignment: .topLeading)
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         }
-        .buttonStyle(.plain)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.primary.opacity(hovering ? 0.08 : 0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.primary.opacity(hovering ? 0.16 : 0.08))
-        )
-        .onHover { hovering = $0 }
-        .animation(.easeOut(duration: 0.12), value: hovering)
-        .help(action.title)
+        .buttonStyle(TileButtonStyle())
+        .help(action.subtitle)
         .accessibilityLabel(action.title)
         .accessibilityHint(action.subtitle)
         .id(version)
     }
 }
 
+/// Hover and pressed states for Home tiles. The press scale is skipped with Reduce Motion.
+private struct TileButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovering = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let fill = configuration.isPressed ? 0.11 : (hovering ? 0.07 : 0.035)
+        configuration.label
+            .contentShape(shape)
+            .background(Color.primary.opacity(fill), in: shape)
+            .overlay(shape.strokeBorder(Color.primary.opacity(hovering ? 0.14 : 0.07)))
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: 0.15), value: hovering)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+/// A shortcut drawn as separate keys, e.g. ⌥ ⇧ ⌘ A.
+struct KeyCaps: View {
+    let combo: KeyCombo
+
+    private struct Cap: Identifiable {
+        let id: Int
+        let label: String
+    }
+
+    private var caps: [Cap] {
+        let text = combo.displayString
+        let modifiers = text.prefix { "⌃⌥⇧⌘".contains($0) }
+        let key = String(text.dropFirst(modifiers.count))
+        let labels = modifiers.map(String.init) + (key.isEmpty ? [] : [key])
+        return labels.enumerated().map { Cap(id: $0.offset, label: $0.element) }
+    }
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(caps) { cap in
+                Text(cap.label)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .frame(minWidth: 18, minHeight: 18)
+                    .padding(.horizontal, cap.label.count > 1 ? 4 : 0)
+                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.1)))
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Shortcut \(combo.displayString)")
+    }
+}
+
 private struct PermissionBanner: View {
-    let fix: () -> Void
+    let fix: @MainActor () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 18))
                 .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Screen Recording isn't allowed yet").font(.system(size: 13, weight: .semibold))
-                Text("Screenshots of other apps, recordings and Measure need it.")
+                Text("Screenshots of other apps, recordings and Measure need it. Already on in System Settings? Fix Permissions on the next page clears old entries.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
             Button("Fix…", action: fix).glassButtonStyle(prominent: true)
         }
         .padding(14)
         .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.orange.opacity(0.25)))
     }
 }

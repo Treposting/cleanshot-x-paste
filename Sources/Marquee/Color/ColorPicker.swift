@@ -96,10 +96,29 @@ final class ColorPickerController: ObservableObject {
     }
 
     /// Shows the magnifier; the picked color is copied in the preferred format.
+    ///
+    /// The magnifier follows the pointer, but clicks and Esc only reach it while Marquee is
+    /// the active app. Started from the menu bar, a global shortcut, or right after the Marquee
+    /// window hides (which makes Marquee inactive), they went to another app instead and the
+    /// screen seemed frozen. So Marquee activates first and waits until it is active.
     func pick() {
         guard sampler == nil else { return }
         let sampler = NSColorSampler()
         self.sampler = sampler
+        NSApp.activate(ignoringOtherApps: true)
+        whenActive(attempts: 20) { [weak self] in self?.show(sampler) }
+    }
+
+    private func whenActive(attempts: Int, _ work: @escaping @MainActor () -> Void) {
+        if NSApp.isActive || attempts <= 0 {
+            work()
+            return
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        runAfter(0.05) { [weak self] in self?.whenActive(attempts: attempts - 1, work) }
+    }
+
+    private func show(_ sampler: NSColorSampler) {
         sampler.show { [weak self] color in
             Task { @MainActor in
                 guard let self else { return }
@@ -119,6 +138,7 @@ final class ColorPickerController: ObservableObject {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
+        Sounds.play(.copy)
         Toast.show("Copied \(text)")
     }
 

@@ -210,7 +210,7 @@ Out of the box only two shortcuts are set: **All-in-One** (<kbd>‚å•</kbd><kbd>‚á
 
 | Tab | What you can change |
 |---|---|
-| Capture | Show the overlay, auto-hide it, copy and/or save after capture, save folder, shutter sound, window shadow, launch at login, automatic update checks |
+| Capture | Show the overlay, auto-hide it, copy and/or save after capture, save folder, shutter sound, copy and paste sound, window shadow, launch at login, menu bar icon (a built-in symbol or your own image), automatic update checks |
 | Recording | Default microphone, desktop audio, start instantly or after 3/5/10 seconds, frame rate, cursor |
 | Measure | Edge-detection tolerance |
 | Clipboard | Turn history on or off, history size (100 to 5,000 items), paste directly into apps |

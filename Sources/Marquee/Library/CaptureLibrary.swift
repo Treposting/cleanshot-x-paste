@@ -88,6 +88,7 @@ final class CaptureLibrary: ObservableObject {
         } else if let image = NSImage(contentsOf: url) {
             image.copyToPasteboard()
         }
+        Sounds.play(.copy)
         Toast.show(item.isVideo ? "Recording copied" : "Screenshot copied")
     }
 

@@ -1,6 +1,7 @@
 import AppKit
 import ServiceManagement
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 struct SettingsView: View {
@@ -23,6 +24,7 @@ private struct CaptureSettings: View {
     @AppStorage(Preferences.Key.copyAfterCapture.rawValue) private var copyAfterCapture = true
     @AppStorage(Preferences.Key.saveAfterCapture.rawValue) private var saveAfterCapture = false
     @AppStorage(Preferences.Key.playSound.rawValue) private var playSound = true
+    @AppStorage(Preferences.Key.copyPasteSound.rawValue) private var copyPasteSound = true
     @AppStorage(Preferences.Key.windowShadow.rawValue) private var windowShadow = true
     @AppStorage(Preferences.Key.overlayTimeout.rawValue) private var overlayTimeout = 0
     @AppStorage(Preferences.Key.saveFolder.rawValue) private var saveFolder = Preferences.defaultSaveFolder.path
@@ -43,6 +45,7 @@ private struct CaptureSettings: View {
             }
             Section("General") {
                 Toggle("Play shutter sound", isOn: $playSound)
+                Toggle("Play sound on copy and paste", isOn: $copyPasteSound)
                 Toggle("Include window shadow", isOn: $windowShadow)
                 HStack {
                     Text("Save to")
@@ -55,6 +58,7 @@ private struct CaptureSettings: View {
                 }
                 LaunchAtLoginToggle()
             }
+            MenuBarIconSection()
             UpdatesSection()
         }
         .formStyle(.grouped)
@@ -152,6 +156,89 @@ private struct ClipboardSettings: View {
             trusted = Paster.isTrusted
             access = PasteboardAccess.status
         }
+    }
+}
+
+/// Pick the menu-bar icon: a built-in symbol or an image of your own.
+@MainActor
+private struct MenuBarIconSection: View {
+    @AppStorage(Preferences.Key.menuBarIcon.rawValue) private var choice = MenuBarIcon.defaultSymbol
+    @AppStorage(Preferences.Key.menuBarIconTemplate.rawValue) private var template = true
+    @State private var customImage = MenuBarIcon.customImage()
+    @State private var loadFailed = false
+
+    private let columns = [GridItem(.adaptive(minimum: 38, maximum: 44), spacing: 8)]
+
+    var body: some View {
+        Section("Menu bar icon") {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+                ForEach(MenuBarIcon.presets) { preset in
+                    tile(selected: choice == preset.symbol, help: preset.title) {
+                        MenuBarIcon.select(preset.symbol)
+                    } content: {
+                        Image(systemName: preset.symbol).font(.system(size: 15))
+                    }
+                }
+                if let customImage {
+                    tile(selected: choice == MenuBarIcon.customChoice, help: "Your image") {
+                        MenuBarIcon.select(MenuBarIcon.customChoice)
+                    } content: {
+                        Image(nsImage: customImage)
+                            .renderingMode(template ? .template : .original)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: 30, maxHeight: 16)
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+            HStack {
+                Text(loadFailed ? "That file couldn't be read as an image." : "Or use your own image.")
+                    .foregroundStyle(loadFailed ? Color.orange : Color.secondary)
+                Spacer()
+                Button("Choose Image…", action: chooseImage)
+            }
+            if customImage != nil {
+                Toggle("Match the menu bar's color", isOn: Binding(
+                    get: { template },
+                    set: { newValue in
+                        template = newValue
+                        customImage = MenuBarIcon.customImage()
+                        MenuBarIcon.select(choice)
+                    }
+                ))
+                Text("Best for a simple shape on a transparent background. Turn it off to keep the image's own colors.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func tile(selected: Bool, help: String, action: @escaping @MainActor () -> Void,
+                      @ViewBuilder content: () -> some View) -> some View {
+        Button(action: action) {
+            content()
+                .frame(width: 38, height: 30)
+                .contentShape(Rectangle())
+                .background(selected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05),
+                            in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 1.5))
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(help)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private func chooseImage() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose an image for the menu bar. It's shown 18 points tall."
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        loadFailed = !MenuBarIcon.useCustomImage(from: url)
+        customImage = MenuBarIcon.customImage()
     }
 }
 

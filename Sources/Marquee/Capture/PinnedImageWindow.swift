@@ -70,6 +70,7 @@ final class PinnedImageWindow: NSPanel {
 
     @objc private func copyImage() {
         image?.copyToPasteboard()
+        Sounds.play(.copy)
         Toast.show("Copied to clipboard")
     }
 

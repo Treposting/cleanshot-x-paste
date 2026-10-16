@@ -208,6 +208,7 @@ final class MeasureView: NSView {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(lastText, forType: .string)
+        Sounds.play(.copy)
         flash("Copied \(lastText)")
     }
 

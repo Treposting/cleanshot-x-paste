@@ -99,15 +99,14 @@ final class MeasureController {
         alert.informativeText = """
         \(error.localizedDescription)
 
-        Measure needs the Screen Recording permission. Enable Marquee in System Settings → \
-        Privacy & Security → Screen & System Audio Recording, then quit and reopen Marquee.
+        Measure needs the Screen Recording permission. If it's already on in System Settings, \
+        use Fix Permissions on the Permissions page, then restart Marquee.
         """
-        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "Open Permissions")
         alert.addButton(withTitle: "Cancel")
         NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn,
-           let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-            NSWorkspace.shared.open(url)
+        if alert.runModal() == .alertFirstButtonReturn {
+            WindowManager.shared.showMain(.permissions)
         }
     }
 }

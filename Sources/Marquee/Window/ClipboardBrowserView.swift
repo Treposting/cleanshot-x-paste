@@ -125,6 +125,7 @@ struct ClipboardBrowserView: View {
         store.writeToPasteboard(item)
         monitor?.ignoreCurrentContents()
         store.touch(item)
+        Sounds.play(.copy)
         Toast.show("Copied")
     }
 }

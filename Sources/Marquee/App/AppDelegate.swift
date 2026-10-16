@@ -67,6 +67,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         center.addObserver(forName: ShortcutStore.recordingDidEnd, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.registerHotKeys() }
         }
+        center.addObserver(forName: MenuBarIcon.didChange, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, !RecordingController.shared.isRecording else { return }
+                self.statusItem.button?.image = Self.idleIcon
+            }
+        }
     }
 
     private func perform(_ action: ShortcutAction) {
@@ -93,9 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rebuildMenu()
     }
 
-    private static var idleIcon: NSImage? {
-        NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Marquee")
-    }
+    private static var idleIcon: NSImage? { MenuBarIcon.current }
 
     /// The menu-bar menu keeps the quick actions; everything else is in the Marquee window.
     private func rebuildMenu() {
@@ -188,6 +192,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let pb = NSPasteboard.general
             pb.clearContents()
             pb.setString(text, forType: .string)
+            Sounds.play(.copy)
             Toast.show("Copied text (\(text.count) characters)")
         }
     }
@@ -235,6 +240,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let capture = Capture(url: url, image: image)
                 capture.copyToPasteboard()
                 CaptureLibrary.shared.add(capture)
+                Sounds.play(.copy)
                 Toast.show("Copied to clipboard")
             }
         case .copyText:
@@ -391,15 +397,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.informativeText = """
         \(error.localizedDescription)
 
-        Marquee needs the Screen Recording permission. Enable it in System Settings → \
-        Privacy & Security → Screen & System Audio Recording, then quit and reopen Marquee.
+        Marquee needs the Screen Recording permission. If it's already on in System Settings, \
+        use Fix Permissions on the Permissions page, then restart Marquee.
         """
-        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "Open Permissions")
         alert.addButton(withTitle: "Cancel")
         NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn,
-           let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-            NSWorkspace.shared.open(url)
+        if alert.runModal() == .alertFirstButtonReturn {
+            WindowManager.shared.showMain(.permissions)
         }
     }
 }

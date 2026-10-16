@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import Combine
 import SwiftUI
 
 /// Live status of the macOS permissions Marquee uses.
@@ -68,12 +69,28 @@ final class PermissionsModel: ObservableObject {
     }
 
     /// Screen Recording only takes effect after Marquee restarts.
+    /// A helper waits until this process has really exited (opening the app while it's still
+    /// quitting just activates the old copy), then opens it again. If the bundle path is gone,
+    /// e.g. a translocated copy, it opens Marquee by bundle identifier instead.
     static func relaunch() {
-        let path = Bundle.main.bundlePath
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", "sleep 1; /usr/bin/open \"$0\"", path]
-        try? task.run()
+        let script = """
+        while /bin/kill -0 "$PID" 2>/dev/null; do /bin/sleep 0.2; done
+        /usr/bin/open "$APP" 2>/dev/null || /usr/bin/open -b "$BUNDLE_ID"
+        """
+        let helper = Process()
+        helper.executableURL = URL(fileURLWithPath: "/bin/sh")
+        helper.arguments = ["-c", script]
+        helper.environment = [
+            "PID": String(ProcessInfo.processInfo.processIdentifier),
+            "APP": Bundle.main.bundlePath,
+            "BUNDLE_ID": Bundle.main.bundleIdentifier ?? "io.github.treposting.marquee",
+        ]
+        do {
+            try helper.run()
+        } catch {
+            NSSound.beep()
+            return
+        }
         NSApp.terminate(nil)
     }
 

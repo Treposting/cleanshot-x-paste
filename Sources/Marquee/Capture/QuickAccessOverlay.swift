@@ -70,6 +70,7 @@ final class QuickAccessManager {
         switch action {
         case .copy:
             capture.copyToPasteboard()
+            Sounds.play(.copy)
             Toast.show("Copied to clipboard")
             dismiss(capture)
         case .save:

@@ -169,17 +169,18 @@ struct LibraryThumbnail: View {
     }
 
     private static func thumbnail(at url: URL) async -> NSImage? {
-        await Task.detached(priority: .utility) { () -> NSImage? in
+        let cg = await Task.detached(priority: .utility) { () -> CGImage? in
             let options: [CFString: Any] = [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceThumbnailMaxPixelSize: 480,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceShouldCache: false,
             ]
-            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-                  let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
-            return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+            return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
         }.value
+        guard let cg else { return nil }
+        return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
     }
 }
 

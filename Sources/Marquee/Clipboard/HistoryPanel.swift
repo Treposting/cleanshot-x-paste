@@ -143,8 +143,12 @@ final class HistoryPanelController: NSObject, NSWindowDelegate {
         monitor.ignoreCurrentContents()
         store.touch(item)
         hide()
-        if Preferences.autoPaste {
+        if Preferences.autoPaste && Paster.isTrusted {
+            Sounds.play(.paste)
             Paster.pasteIntoFrontApp()
+        } else {
+            Sounds.play(.copy)
+            if Preferences.autoPaste { Paster.pasteIntoFrontApp() }
         }
     }
 

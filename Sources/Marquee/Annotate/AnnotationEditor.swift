@@ -45,6 +45,7 @@ final class AnnotationWindowController: NSObject, NSWindowDelegate {
         let image = document.render()
         image.copyToPasteboard()
         onDone(image)
+        Sounds.play(.copy)
         Toast.show("Copied to clipboard")
     }
 
