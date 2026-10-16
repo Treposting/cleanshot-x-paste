@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.7 — 2026-10-17
+
 ### Added
 - **Menu bar icon**: choose a different symbol or your own image in Settings → Capture. Your image can take the menu bar's color or keep its own.
 - **Clipboard history**: a copied color (`#FFCF1A`, `rgb(…)`, `hsl(…)`) shows a small swatch in front of it, and each card's header takes the main color of its source app's icon.

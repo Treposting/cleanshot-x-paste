@@ -1,6 +1,6 @@
 # Tasks
 
-Status as of v0.5.6 (2026-10-16). Project context and conventions are in [CLAUDE.md](CLAUDE.md); release history is in [CHANGELOG.md](CHANGELOG.md).
+Status as of v0.5.7 (2026-10-17). Project context and conventions are in [CLAUDE.md](CLAUDE.md); release history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Done
 
@@ -35,7 +35,7 @@ Status as of v0.5.6 (2026-10-16). Project context and conventions are in [CLAUDE
 - [x] In-app updates from GitHub Releases (verified signature, swap on restart)
 - [x] Stable self-signed release signing (from 0.5.5) so permissions survive updates; Permissions page with Fix Permissions (tccutil reset) and Restart Marquee
 - [x] Release workflow, universal DMG + zip, CI with tests
-- [x] Unreleased: Home redesign; menu-bar icon choice (symbols or your own image); copy/paste sounds; color picker no longer freezes input; Restart Marquee relaunches reliably (#6); build has no warnings
+- [x] 0.5.7: Home redesign; clipboard color swatches and cards tinted by source app; menu-bar icon choice (symbols or your own image); copy/paste sounds; color picker no longer freezes input; Restart Marquee relaunches reliably (#6); build has no warnings
 
 **Project**
 - [x] Issue updates bot: progress, fixed and released comments plus labels, driven by commit messages and the Release workflow
