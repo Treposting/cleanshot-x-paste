@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Building with the macOS 26 SDK turns on Liquid Glass for Marquee's windows and
       # controls on macOS 26 and 27 (apps built with older SDKs keep the old look).
