@@ -45,6 +45,16 @@ video/    demo.html (time-driven scene) + render.mjs (Playwright → ffmpeg)
 - Global shortcuts: only All-in-One (⌥⇧⌘A) and Clipboard History (⇧⌘V) have defaults; everything else is user-defined (`ShortcutAction.defaultCombo`).
 - Copy for users: plain, specific, sentence case. Update `README.md`, `CHANGELOG.md` ("Unreleased") and `site/index.html` when a user-facing feature changes.
 
+## Working on GitHub issues
+
+The **Issue updates** workflow (`.github/workflows/issue-updates.yml`, logic in `.github/scripts/issue-status.js`) keeps issues up to date from commit messages, so:
+
+- **Mention the issue in every commit** for it, e.g. `Detect permissions granted to older builds (#6)`. The first mention posts "Work has started" and adds the `in progress` label. Each commit is listed in one status comment on the issue.
+- **The commit that fixes it** says `Fixes #6` in its message. When it reaches `main`, the issue gets "Fixed, ships in the next release" and the `fixed (unreleased)` label (GitHub also closes it).
+- **The Release workflow** then comments "Released in vX.Y.Z", sets `released` and closes it. Don't close issues by hand.
+- When you start on an issue, post a short plain note for the reporter with what you found or plan: `gh issue comment 6 --body "…"`. Ask there if you need steps, logs or a macOS version. Keep it user-facing: no internal jargon.
+- Don't mention an issue number in commits that aren't about that issue (it would post on it). Hex colors like `#FFCF1A` are ignored.
+
 ## Releasing
 
 - Never push tags by hand. Run **Actions → Release** (`release.yml`, workflow_dispatch) with a `version` input like `0.5.7`. It bumps `Resources/Info.plist`, runs tests, signs with the project certificate, builds the DMG + zip and publishes the GitHub Release. Then pull `main` (the workflow pushes a "Release vX" commit).

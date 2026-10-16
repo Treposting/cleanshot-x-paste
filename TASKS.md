@@ -36,6 +36,9 @@ Status as of v0.5.6 (2026-10-16). Project context and conventions are in [CLAUDE
 - [x] Stable self-signed release signing (from 0.5.5) so permissions survive updates; Permissions page with Fix Permissions (tccutil reset) and Restart Marquee
 - [x] Release workflow, universal DMG + zip, CI with tests
 
+**Project**
+- [x] Issue updates bot: progress, fixed and released comments plus labels, driven by commit messages and the Release workflow
+
 **Site and docs**
 - [x] Landing page (ruler-yellow design) with the 24-second demo pinned in the hero
 - [x] README, CHANGELOG, HOW-IT-WORKS, SIGNING docs

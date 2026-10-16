@@ -291,6 +291,8 @@ Ideas and requests are welcome in [Issues](https://github.com/Treposting/marquee
 2. Make your change. You need Xcode 26: `make run` builds and launches the app, and `swift test` runs the tests.
 3. Open a pull request. CI runs the tests and builds the universal app and DMG on every push, and it needs to pass.
 
+Working on an issue? Mention it in your commit messages (`… (#12)`, and `Fixes #12` in the commit that fixes it). A bot then keeps the issue updated: work started, fixed, and the release it shipped in.
+
 Marquee has no third-party dependencies; [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) explains each feature and the Apple API behind it.
 
 <details>
