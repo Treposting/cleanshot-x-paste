@@ -130,6 +130,7 @@ Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar app
 ### Clipboard history
 
 - **Remembers** text, links, images and files, along with the app each one came from.
+- **Image and video previews.** Copy an image or video file in Finder and its card shows a preview, with a play badge on videos, instead of the file icon.
 - **Color swatches.** Copy a color like `#FFCF1A`, `rgb(255, 207, 26)` or `hsl(47, 100%, 55%)` and its card shows a small swatch in front of it.
 - **Cards in the source app's color.** Each card's header takes the main color of the app it came from.
 - **Opens with ⇧⌘V** as a panel along the bottom of the screen. Type to search, or filter by type.

@@ -145,7 +145,7 @@ struct ClipCard: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(color == nil ? item.kind.label : "Color").font(.system(size: 13, weight: .semibold))
+                    Text(headerLabel).font(.system(size: 13, weight: .semibold))
                     Text(item.date, style: .relative).font(.system(size: 10)).opacity(0.85)
                 }
                 Spacer()
@@ -214,18 +214,44 @@ struct ClipCard: View {
                 Image(systemName: "photo").font(.largeTitle).foregroundStyle(.secondary)
             }
         case .file:
-            VStack(alignment: .leading, spacing: 6) {
-                if let fileIcon {
-                    Image(nsImage: fileIcon).resizable().frame(width: 56, height: 56)
+            if let url = item.fileURLs.first, let media = FileMedia(url) {
+                VStack(alignment: .leading, spacing: 6) {
+                    FilePreview(url: url, media: media, fallbackIcon: fileIcon)
+                    Text(item.fileURLs.count > 1
+                         ? "\(url.lastPathComponent) +\(item.fileURLs.count - 1) more"
+                         : url.lastPathComponent)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
-                ForEach(item.fileURLs.prefix(4), id: \.self) { url in
-                    Text(url.lastPathComponent).font(.system(size: 12)).lineLimit(1)
-                }
-                if item.fileURLs.count > 4 {
-                    Text("+\(item.fileURLs.count - 4) more").font(.caption).foregroundStyle(.secondary)
-                }
+            } else {
+                fileList
             }
         }
+    }
+
+    private var fileList: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let fileIcon {
+                Image(nsImage: fileIcon).resizable().frame(width: 56, height: 56)
+            }
+            ForEach(item.fileURLs.prefix(4), id: \.self) { url in
+                Text(url.lastPathComponent).font(.system(size: 12)).lineLimit(1)
+            }
+            if item.fileURLs.count > 4 {
+                Text("+\(item.fileURLs.count - 4) more").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// "Image" or "Video" for a copied media file, otherwise the kind's own label.
+    private var headerLabel: String {
+        if color != nil { return "Color" }
+        if item.kind == .file, let url = item.fileURLs.first, let media = FileMedia(url) {
+            return media == .video ? "Video" : "Image"
+        }
+        return item.kind.label
     }
 
     private var footer: String {
