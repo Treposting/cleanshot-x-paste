@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.12 — 2026-10-17
+
 ### Fixed
 - **Updating no longer fails with "Marquee can't replace itself where it's running from".** When Marquee runs from the disk image or a protected copy, the update now installs into Applications. If your account can't write there, macOS asks for an administrator password. Any other copy of Marquee that's running is closed first, so the new version opens instead of an old copy. Restart Marquee on the Permissions page closes other copies too.
 
