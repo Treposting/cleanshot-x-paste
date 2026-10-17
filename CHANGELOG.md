@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.14 — 2026-10-17
+
 ### Added
 - **Ignore apps in clipboard history**: nothing copied in Passwords, Keychain Access, 1Password, Bitwarden, LastPass, Dashlane, Keeper, NordPass, Proton Pass, Enpass, KeePassXC or Strongbox is saved, even when the app doesn't mark it as private (on by default). Add any other app in Settings → Clipboard → Ignored apps, or right-click an item → Ignore Copies from <App>, optionally deleting what's already saved from it.
 

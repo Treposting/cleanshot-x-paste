@@ -1,6 +1,6 @@
 # Tasks
 
-Status as of v0.5.13 (2026-10-17). Project context and conventions are in [CLAUDE.md](CLAUDE.md); release history is in [CHANGELOG.md](CHANGELOG.md).
+Status as of v0.5.14 (2026-10-17). Project context and conventions are in [CLAUDE.md](CLAUDE.md); release history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Done
 
