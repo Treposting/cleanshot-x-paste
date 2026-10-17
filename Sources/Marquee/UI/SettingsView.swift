@@ -141,6 +141,7 @@ private struct ClipboardSettings: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            IgnoredAppsSection()
             Section("Links") {
                 Toggle("Show link previews", isOn: $linkPreviews)
                 Text("Shows the page's title and image for copied links. Marquee loads them from the website when the link appears in your history. Links to your own network (like 192.168.x.x or .local) are never loaded.")
@@ -550,6 +551,89 @@ private struct CameraLayoutPreview: View {
         case .topRight: return .topTrailing
         case .bottomLeft: return .bottomLeading
         case .bottomRight: return .bottomTrailing
+        }
+    }
+}
+
+/// Settings → Clipboard → Ignored apps: password managers (on by default) and apps you add.
+@MainActor
+private struct IgnoredAppsSection: View {
+    @State private var ignorePasswordManagers = IgnoredApps.ignorePasswordManagers
+    @State private var custom = IgnoredApps.custom
+    @State private var installed = IgnoredApps.installedPasswordManagers()
+    @State private var running: [IgnoredApps.App] = []
+
+    var body: some View {
+        Section("Ignored apps") {
+            Toggle("Ignore password managers and Keychain", isOn: Binding(
+                get: { ignorePasswordManagers },
+                set: { IgnoredApps.ignorePasswordManagers = $0 }
+            ))
+            Text(passwordManagerNote)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            ForEach(custom, id: \.self) { bundleID in
+                HStack(spacing: 10) {
+                    if let icon = IgnoredApps.icon(for: bundleID) {
+                        Image(nsImage: icon).resizable().frame(width: 20, height: 20)
+                    } else {
+                        Image(systemName: "app.dashed").frame(width: 20, height: 20)
+                    }
+                    Text(IgnoredApps.name(for: bundleID))
+                    Spacer()
+                    Button {
+                        IgnoredApps.remove(bundleID)
+                    } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Save copies from this app again")
+                    .accessibilityLabel("Stop ignoring \(IgnoredApps.name(for: bundleID))")
+                }
+            }
+
+            HStack {
+                Text(custom.isEmpty ? "Copies from these apps are never saved." : "")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Menu("Add Running App") {
+                    if running.isEmpty {
+                        Text("No other apps are open")
+                    }
+                    ForEach(running) { app in
+                        Button(app.name) { IgnoredApps.add(app.bundleID) }
+                    }
+                }
+                .fixedSize()
+                .onHover { if $0 { running = IgnoredApps.runningCandidates() } }
+                Button("Choose App…", action: chooseApp)
+            }
+        }
+        .onAppear { running = IgnoredApps.runningCandidates() }
+        .onReceive(NotificationCenter.default.publisher(for: IgnoredApps.didChange)) { _ in
+            ignorePasswordManagers = IgnoredApps.ignorePasswordManagers
+            custom = IgnoredApps.custom
+            running = IgnoredApps.runningCandidates()
+        }
+    }
+
+    private var passwordManagerNote: String {
+        let names = installed.map(\.name)
+        let found = names.isEmpty ? "" : " On this Mac: \(names.joined(separator: ", "))."
+        return "Passwords, Keychain Access, 1Password, Bitwarden, LastPass, Dashlane, Keeper, NordPass, Proton Pass, Enpass, KeePassXC and Strongbox.\(found)"
+    }
+
+    private func chooseApp() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.allowsMultipleSelection = true
+        panel.message = "Choose apps whose copies Marquee shouldn't save."
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls {
+            if let id = Bundle(url: url)?.bundleIdentifier { IgnoredApps.add(id) }
         }
     }
 }

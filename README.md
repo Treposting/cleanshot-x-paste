@@ -237,7 +237,8 @@ Out of the box only two shortcuts are set: **All-in-One** (<kbd>⌥</kbd><kbd>�
 - **No account and no uploads.** Captures and history never leave your Mac. Marquee makes two kinds of network request, and you can turn both off in Settings: the daily update check to GitHub, and link previews, which load a copied link's title and image from its website (links to your own network are never loaded).
 - **Clipboard history** is stored in `~/Library/Application Support/Marquee/`. Clear it from **Clipboard** in the Marquee window at any time; pinned items are kept.
 - **The Library** keeps a copy of your last 300 captures in `~/Library/Application Support/Marquee/Library`. Clear it from **Library** at any time.
-- **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`. Marquee never records those items.
+- **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`, and Marquee never records those items. On top of that, nothing copied in Passwords, Keychain Access, 1Password, Bitwarden, LastPass, Dashlane, Keeper, NordPass, Proton Pass, Enpass, KeePassXC or Strongbox is saved, even if the app doesn't mark it.
+- **Ignore any app.** Add apps whose copies should never be saved in **Settings → Clipboard → Ignored apps**, or right-click an item → **Ignore Copies from <App>** (and optionally delete what's already saved from it).
 - **Pause history** from **Clipboard** in the Marquee window when you're copying something sensitive.
 
 ## Troubleshooting
@@ -302,7 +303,7 @@ Turn off automatic checks in **Settings → Capture → Updates**. Updates only 
 - [x] Webcam overlay in recordings
 - [x] Scrolling capture
 - [ ] Rich text (RTF/HTML) in clipboard history
-- [ ] Exclude specific apps from history
+- [x] Exclude specific apps from history
 - [ ] Notarized releases
 
 Ideas and requests are welcome in [Issues](https://github.com/Treposting/marquee/issues).

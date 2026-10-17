@@ -74,6 +74,7 @@ struct ClipboardBrowserView: View {
                                 Button("Copy") { copy(item) }
                                 Button(item.pinned ? "Unpin" : "Pin") { store.togglePin(item) }
                                 CategoryMenu(item: item, store: store, draft: $draft)
+                                IgnoreAppMenu(item: item, store: store)
                                 Divider()
                                 Button("Delete", role: .destructive) { store.remove(item) }
                             }

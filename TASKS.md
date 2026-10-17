@@ -65,7 +65,6 @@ Built and passing CI, but not yet tried by hand:
 ## Backlog
 
 - [ ] Rich text (RTF/HTML) in clipboard history
-- [ ] Exclude specific apps from clipboard history
 - [ ] Notarized releases (needs an Apple Developer ID, $99/year; removes the right-click → Open step)
 - [ ] Windows version: proposed as a separate native C#/.NET app built in phases (capture + clipboard first). Not started; waiting on a go-ahead.
 

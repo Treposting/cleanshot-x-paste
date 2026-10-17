@@ -38,6 +38,8 @@ enum Preferences {
         case cameraBorder
         case cameraMirror
         case recordVoiceSeparately
+        case ignorePasswordManagers
+        case ignoredApps
     }
 
     static var defaults: UserDefaults { .standard }

@@ -95,6 +95,14 @@ final class ClipboardStore: ObservableObject {
         scheduleSave()
     }
 
+    /// Removes every item copied from an app (after the user chooses to ignore it).
+    func removeItems(fromApp bundleID: String) {
+        let removed = items.filter { $0.sourceBundleID == bundleID }
+        items.removeAll { $0.sourceBundleID == bundleID }
+        removed.forEach { deleteFiles(of: $0) }
+        scheduleSave()
+    }
+
     /// Clears history. With `keepPinned`, pinned items and items in a category stay.
     func clear(keepPinned: Bool) {
         let removed = items.filter { !keepPinned || !$0.isKept }

@@ -138,6 +138,7 @@ struct HistoryView: View {
                             Button("Paste") { onPaste(item) }
                             Button(item.pinned ? "Unpin" : "Pin") { onTogglePin(item) }
                             CategoryMenu(item: item, store: model.store, draft: $model.draft)
+                            IgnoreAppMenu(item: item, store: model.store)
                             Divider()
                             Button("Delete", role: .destructive) { onDelete(item) }
                         }

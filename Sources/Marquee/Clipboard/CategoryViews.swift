@@ -228,3 +228,29 @@ struct CategoryMenu: View {
         }
     }
 }
+
+/// "Ignore Copies from <App>" for an item's context menu: stop saving that app's copies, and
+/// optionally delete what's already in history from it.
+@MainActor
+struct IgnoreAppMenu: View {
+    let item: ClipItem
+    @ObservedObject var store: ClipboardStore
+
+    var body: some View {
+        if let bundleID = item.sourceBundleID, bundleID != Bundle.main.bundleIdentifier,
+           !IgnoredApps.isIgnored(bundleID) {
+            let name = item.sourceAppName ?? IgnoredApps.name(for: bundleID)
+            Menu("Ignore Copies from \(name)") {
+                Button("Ignore Future Copies") {
+                    IgnoredApps.add(bundleID)
+                    Toast.show("Copies from \(name) won't be saved", duration: 2.2)
+                }
+                Button("Ignore and Delete Its Items", role: .destructive) {
+                    IgnoredApps.add(bundleID)
+                    store.removeItems(fromApp: bundleID)
+                    Toast.show("Removed \(name)'s items. New copies won't be saved", duration: 2.5)
+                }
+            }
+        }
+    }
+}

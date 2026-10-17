@@ -57,7 +57,9 @@ final class ClipboardMonitor {
         let types = pb.types ?? []
         if types.contains(where: { Self.ignoredTypes.contains($0.rawValue) }) { return }
 
+        // Copies made in password managers, Keychain, or apps the user ignores are never stored.
         let app = NSWorkspace.shared.frontmostApplication
+        if IgnoredApps.isIgnored(app?.bundleIdentifier) { return }
 
         // Priority: files > text > image. Copying text from rich apps often adds
         // an image preview too, and copying a file in Finder also adds its name as text.
