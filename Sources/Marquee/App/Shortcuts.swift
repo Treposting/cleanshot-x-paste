@@ -76,6 +76,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
     case captureFullscreen
     case captureTimed
     case captureText
+    case captureScrolling
     case recordArea
     case recordScreen
     case measure
@@ -92,6 +93,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
         case .captureFullscreen: return "Capture Full Screen"
         case .captureTimed: return "Capture Full Screen in 5 Seconds"
         case .captureText: return "Capture Text (OCR)"
+        case .captureScrolling: return "Capture Scrolling"
         case .recordArea: return "Record Area"
         case .recordScreen: return "Record Screen"
         case .measure: return "Measure"
@@ -113,7 +115,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
 
     var category: Category {
         switch self {
-        case .allInOne, .captureArea, .captureWindow, .captureFullscreen, .captureTimed, .captureText: return .capture
+        case .allInOne, .captureArea, .captureWindow, .captureFullscreen, .captureTimed, .captureText, .captureScrolling:
+            return .capture
         case .recordArea, .recordScreen: return .record
         case .measure, .pickColor: return .tools
         case .clipboardHistory: return .clipboard

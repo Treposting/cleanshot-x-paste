@@ -62,6 +62,22 @@ A screenshot copied by the capture side lands on the pasteboard. The history sid
 | Verify | `ditto` to unzip; bundle ID and version must match; `SecStaticCodeCheckValidity`, plus the running app's designated requirement when it isn't ad-hoc signed | `UpdateInstaller` |
 | Install | A small shell helper waits for Marquee to quit, swaps the bundle, and reopens it | `UpdateInstaller.replaceAndRelaunch` |
 
+## Scrolling capture
+
+| Step | API | Marquee |
+|---|---|---|
+| Grab the area ~10× a second | `SCScreenshotManager.captureImage` with `sourceRect` (macOS 14) | `Capture/ScrollCapture.swift` |
+| Find how far it scrolled | Row fingerprints; fixed top/bottom rows set aside; best-matching offset of the moving middle | `Capture/ScrollStitcher.swift` (unit tested) |
+| Auto-scroll | `CGEvent` scroll-wheel events (needs Accessibility) | `ScrollCaptureController` |
+
+## Camera and voice
+
+| Step | API | Marquee |
+|---|---|---|
+| Camera bubble | `AVCaptureSession` + `AVCaptureVideoPreviewLayer` in a borderless panel, clipped to the chosen shape | `Record/CameraOverlay.swift` |
+| Keep it in the video | Marquee's windows are excluded from recordings, except the bubble (`SCContentFilter … exceptingWindows:`) | `Record/ScreenRecorder.swift` |
+| Voice file | The microphone is its own audio track; it's copied to an .m4a (`AVAssetExportSession`, AppleM4A) before tracks are mixed | `Record/AudioMixdown.swift` |
+
 ## Measure
 
 | Step | API | Marquee |

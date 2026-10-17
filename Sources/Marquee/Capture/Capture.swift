@@ -69,7 +69,12 @@ final class Capture: ObservableObject, Identifiable {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        let prefix = ext == "png" ? "Marquee" : "Marquee Recording"
+        let prefix: String
+        switch ext {
+        case "png": prefix = "Marquee"
+        case "m4a": prefix = "Marquee Voice"
+        default: prefix = "Marquee Recording"
+        }
         return "\(prefix) \(f.string(from: date))\(suffix).\(ext)"
     }
 

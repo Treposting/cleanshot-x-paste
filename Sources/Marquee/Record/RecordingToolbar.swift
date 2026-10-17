@@ -20,12 +20,17 @@ final class RecordingSession: ObservableObject {
     @Published var micLevel: Float = 0
     @Published var micProblem: String?
     @Published var desktopAudio: Bool
+    @Published var separateVoice: Bool
+    @Published var cameraEnabled = false
+    @Published var cameraName = "No camera"
+    @Published var cameraProblem: String?
     let sizeLabel: String
 
-    init(micEnabled: Bool, micID: String?, desktopAudio: Bool, sizeLabel: String) {
+    init(micEnabled: Bool, micID: String?, desktopAudio: Bool, separateVoice: Bool, sizeLabel: String) {
         self.micEnabled = micEnabled
         self.micID = micID
         self.desktopAudio = desktopAudio
+        self.separateVoice = separateVoice
         self.sizeLabel = sizeLabel
     }
 }
@@ -40,6 +45,7 @@ struct RecordingToolbar: View {
         var discard: () -> Void
         var showMicMenu: () -> Void
         var toggleDesktopAudio: () -> Void
+        var showCameraMenu: () -> Void
     }
 
     @ObservedObject var session: RecordingSession
@@ -119,6 +125,22 @@ struct RecordingToolbar: View {
         .buttonStyle(ChipStyle(active: session.desktopAudio))
         .help(session.desktopAudio ? "Recording what your Mac plays. Click to turn off." : "Click to record what your Mac plays")
 
+        Button(action: actions.showCameraMenu) {
+            HStack(spacing: 7) {
+                Image(systemName: session.cameraProblem != nil ? "video.slash.fill"
+                      : (session.cameraEnabled ? "video.fill" : "video.slash.fill"))
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 18)
+                Text(session.cameraProblem != nil ? "Camera blocked" : (session.cameraEnabled ? "Camera" : "No camera"))
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .opacity(0.6)
+            }
+        }
+        .buttonStyle(ChipStyle(active: session.cameraEnabled, warning: session.cameraProblem != nil))
+        .help(session.cameraProblem ?? "Show your camera in the recording, and choose its shape, size and corner")
+
         ToolbarDivider()
 
         Button(action: actions.start) {
@@ -160,7 +182,13 @@ struct RecordingToolbar: View {
                 LevelMeter(level: session.micLevel)
             }
             .padding(.horizontal, 6)
-            .help(session.micName)
+            .help(session.separateVoice ? "\(session.micName). Your voice is also saved as its own file." : session.micName)
+        }
+        if session.cameraEnabled {
+            Image(systemName: "video.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .padding(.horizontal, 6)
+                .help("Recording your camera")
         }
         if session.desktopAudio {
             Image(systemName: "speaker.wave.2.fill")

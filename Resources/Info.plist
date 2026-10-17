@@ -30,6 +30,8 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>MIT License</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Marquee shows your camera only while you're making a screen recording with the camera turned on.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Marquee records your microphone only while you're making a screen recording with the microphone turned on.</string>
 </dict>

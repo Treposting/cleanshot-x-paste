@@ -10,6 +10,7 @@ extension ShortcutAction {
         case .captureFullscreen: return "display"
         case .captureTimed: return "timer"
         case .captureText: return "text.viewfinder"
+        case .captureScrolling: return "scroll"
         case .recordArea: return "record.circle"
         case .recordScreen: return "video.circle"
         case .measure: return "ruler"
@@ -26,6 +27,7 @@ extension ShortcutAction {
         case .captureFullscreen: return "The display under the pointer"
         case .captureTimed: return "Full screen after 5 seconds"
         case .captureText: return "Select text anywhere and copy it"
+        case .captureScrolling: return "One long screenshot as you scroll"
         case .recordArea: return "Video of an area, with audio"
         case .recordScreen: return "Video of the whole display"
         case .measure: return "Distances and sizes on screen"
@@ -43,6 +45,7 @@ extension ShortcutAction {
         case .captureFullscreen: return "Full Screen"
         case .captureTimed: return "Self-Timer"
         case .captureText: return "Copy Text"
+        case .captureScrolling: return "Scrolling"
         case .recordArea: return "Record Area"
         case .recordScreen: return "Record Screen"
         case .measure: return "Measure"
@@ -70,7 +73,7 @@ struct HomeView: View {
     }
 
     private let groups: [ActionGroup] = [
-        ActionGroup(title: "Capture", actions: [.captureArea, .captureWindow, .captureFullscreen, .captureTimed, .captureText]),
+        ActionGroup(title: "Capture", actions: [.captureArea, .captureWindow, .captureFullscreen, .captureScrolling, .captureTimed, .captureText]),
         ActionGroup(title: "Record", actions: [.recordArea, .recordScreen]),
         ActionGroup(title: "Tools", actions: [.measure, .pickColor, .clipboardHistory]),
     ]

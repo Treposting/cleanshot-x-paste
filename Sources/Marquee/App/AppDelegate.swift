@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         recording.onRecordingChanged = { [weak self] active in self?.setRecordingUI(active) }
         recording.onFinished = { [weak self] url in self?.deliverRecording(url) }
         recording.onError = { [weak self] error in self?.showRecordingError(error) }
+        ScrollCaptureController.shared.onFinished = { [weak self] url in self?.handleCapture(at: url) }
         Updater.shared.onStateChange = { [weak self] in self?.rebuildMenu() }
         Updater.shared.startAutomaticChecks()
 
@@ -84,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .captureFullscreen: capture(.fullscreen)
         case .captureTimed: capture(.timedFullscreen)
         case .captureText: capture(.text)
+        case .captureScrolling: captureScrolling()
         case .recordArea: toggleRecording(selectArea: true)
         case .recordScreen: toggleRecording(selectArea: false)
         case .measure: MeasureController.shared.toggle()
@@ -106,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(item("Open Marquee", #selector(openMainWindow)))
         menu.addItem(.separator())
-        for action: ShortcutAction in [.allInOne, .captureArea, .captureWindow, .captureFullscreen] {
+        for action: ShortcutAction in [.allInOne, .captureArea, .captureWindow, .captureFullscreen, .captureScrolling] {
             menu.addItem(actionItem(action))
         }
         menu.addItem(.separator())
@@ -182,6 +184,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Select the part that scrolls, then scroll it; the stitched image arrives in `handleCapture`.
+    private func captureScrolling() {
+        guard !RecordingController.shared.isBusy, !MeasureController.shared.isActive,
+              !ScrollCaptureController.shared.isActive else { return }
+        AreaSelector.select(hint: "Drag over the part that scrolls  ·  Return: whole screen  ·  Esc: cancel") { selection in
+            guard let (screen, rect) = selection else { return }
+            ScrollCaptureController.shared.start(screen: screen, rect: rect)
+        }
+    }
+
     private func recognizeText(at url: URL) {
         TextRecognizer.recognize(imageAt: url) { text in
             try? FileManager.default.removeItem(at: url)
@@ -223,6 +235,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleAllInOne(_ choice: AllInOneController.Choice, screen: NSScreen, rect: CGRect) {
         switch choice {
+        case .screenshot(.scrolling):
+            ScrollCaptureController.shared.start(screen: screen, rect: rect)
         case .screenshot(.window):
             // The native window picker: click a window, Esc cancels.
             captureService.capture(.window) { [weak self] url in

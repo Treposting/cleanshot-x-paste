@@ -52,6 +52,8 @@ Built and passing CI, but not yet tried by hand:
 - [ ] Recording a window with WindowPicker (highlight follows the pointer; multi-display)
 - [ ] Permissions persist from 0.5.5 → 0.5.6 → next release
 - [ ] Fix Permissions / Restart Marquee on the Permissions page (relaunch rewritten for #6)
+- [ ] Camera bubble: each shape/size/corner, dragging while recording, switching camera, mirror; voice file saved next to the recording
+- [ ] Scrolling capture: manual scroll and Auto-scroll on a long web page, a page with a sticky header, and a chat
 - [ ] Measure guides (H/V, drag, arrows, Tab, ⌫) and measuring on two displays at once
 - [ ] Color picker from the menu bar, a shortcut, Home and All-in-One: clicks and Esc work
 
@@ -62,8 +64,6 @@ Built and passing CI, but not yet tried by hand:
 
 ## Backlog
 
-- [ ] Webcam overlay in recordings
-- [ ] Scrolling capture
 - [ ] Rich text (RTF/HTML) in clipboard history
 - [ ] Exclude specific apps from clipboard history
 - [ ] Notarized releases (needs an Apple Developer ID, $99/year; removes the right-click → Open step)

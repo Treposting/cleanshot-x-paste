@@ -6,6 +6,24 @@ import AVFoundation
 enum AudioMixdown {
     enum MixError: Error { case cannotRead, cannotWrite, failed }
 
+    /// Copies one audio track of a recording into its own .m4a file, without re-encoding.
+    /// The microphone is always the last audio track (desktop audio, when recorded, comes first).
+    static func exportMicrophoneTrack(of url: URL, to destination: URL) async throws {
+        let asset = AVURLAsset(url: url)
+        guard let track = try await asset.loadTracks(withMediaType: .audio).last else { throw MixError.cannotRead }
+        let duration = try await asset.load(.duration)
+        let composition = AVMutableComposition()
+        guard let copy = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        else { throw MixError.cannotWrite }
+        try copy.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: track, at: .zero)
+        guard let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetAppleM4A)
+        else { throw MixError.cannotWrite }
+        export.outputURL = destination
+        export.outputFileType = .m4a
+        await export.export()
+        guard export.status == .completed else { throw export.error ?? MixError.failed }
+    }
+
     /// Replaces the file at `url` with a version that has a single mixed audio track.
     /// Does nothing if the file has fewer than two audio tracks.
     static func mixAudioTracks(at url: URL) async throws {

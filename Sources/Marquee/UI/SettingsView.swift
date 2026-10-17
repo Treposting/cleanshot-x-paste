@@ -334,6 +334,7 @@ private struct RecordingSettings: View {
     @AppStorage(Preferences.Key.recordMicrophone.rawValue) private var micEnabled = false
     @AppStorage(Preferences.Key.recordMicrophoneID.rawValue) private var micID = ""
     @AppStorage(Preferences.Key.recordCountdownSeconds.rawValue) private var countdown = 3
+    @AppStorage(Preferences.Key.recordVoiceSeparately.rawValue) private var separateVoice = false
     @State private var devices: [MicrophoneCapture.Device] = []
 
     /// "" = off, "default" = system default input, otherwise a device ID.
@@ -359,10 +360,12 @@ private struct RecordingSettings: View {
                     }
                 }
                 Toggle("Record desktop audio", isOn: $desktopAudio)
-                Text("Desktop audio is what your Mac plays: videos, calls, music. When both are on, they're mixed into one soundtrack. You can change both on the recording toolbar too.")
+                Toggle("Also save my voice as a separate file", isOn: $separateVoice)
+                Text("Desktop audio is what your Mac plays: videos, calls, music. When both are on, they're mixed into one soundtrack. Your voice can also be saved on its own, as an .m4a file in your screenshots folder, for editing. You can change all of this on the recording toolbar too.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            CameraSettingsSection()
             Section("Start") {
                 Picker("Start recording", selection: $countdown) {
                     Text("Instantly").tag(0)
@@ -419,5 +422,130 @@ private struct ShortcutsSettings: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// Settings → Recording → Camera: on or off, which camera, and the bubble's look, with a
+/// small diagram of where it sits in the recording.
+@MainActor
+private struct CameraSettingsSection: View {
+    @AppStorage(Preferences.Key.recordCamera.rawValue) private var enabled = false
+    @AppStorage(Preferences.Key.recordCameraID.rawValue) private var cameraID = ""
+    @AppStorage(Preferences.Key.cameraShape.rawValue) private var shape = CameraStyle.Shape.circle.rawValue
+    @AppStorage(Preferences.Key.cameraSize.rawValue) private var size = CameraStyle.Size.medium.rawValue
+    @AppStorage(Preferences.Key.cameraPosition.rawValue) private var position = CameraStyle.Position.bottomLeft.rawValue
+    @AppStorage(Preferences.Key.cameraBorder.rawValue) private var border = CameraStyle.Border.white.rawValue
+    @AppStorage(Preferences.Key.cameraMirror.rawValue) private var mirror = true
+    @State private var cameras: [CameraDevices.Device] = []
+
+    var body: some View {
+        Section("Camera") {
+            Toggle("Show my camera in recordings", isOn: $enabled)
+            Picker("Camera", selection: $cameraID) {
+                Text("System default").tag("")
+                ForEach(cameras) { Text($0.name).tag($0.id) }
+                // A saved camera that's unplugged keeps its place; the default is used meanwhile.
+                if !cameraID.isEmpty, !cameras.contains(where: { $0.id == cameraID }) {
+                    Text("Saved camera (not connected)").tag(cameraID)
+                }
+            }
+            .disabled(!enabled)
+            if cameras.isEmpty {
+                Text("No camera is connected. Built-in, USB, capture-card, virtual and iPhone cameras all show up here when connected.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+            HStack(alignment: .top, spacing: 18) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Picker("Shape", selection: $shape) {
+                        ForEach(CameraStyle.Shape.allCases) { Label($0.title, systemImage: $0.symbol).tag($0.rawValue) }
+                    }
+                    Picker("Size", selection: $size) {
+                        ForEach(CameraStyle.Size.allCases) { Text($0.title).tag($0.rawValue) }
+                    }
+                    Picker("Position", selection: $position) {
+                        ForEach(CameraStyle.Position.allCases) { Label($0.title, systemImage: $0.symbol).tag($0.rawValue) }
+                    }
+                    Picker("Border", selection: $border) {
+                        ForEach(CameraStyle.Border.allCases) { Text($0.title).tag($0.rawValue) }
+                    }
+                    Toggle("Mirror", isOn: $mirror)
+                }
+                CameraLayoutPreview(
+                    shape: CameraStyle.Shape(rawValue: shape) ?? .circle,
+                    size: CameraStyle.Size(rawValue: size) ?? .medium,
+                    position: CameraStyle.Position(rawValue: position) ?? .bottomLeft,
+                    border: CameraStyle.Border(rawValue: border) ?? .white
+                )
+            }
+            .disabled(!enabled)
+            Text("The camera shows in a bubble inside the recording area, recorded exactly as you see it. Drag it anywhere, even while recording. The Camera menu on the recording toolbar has the same options.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .onAppear {
+            CameraDevices.startWatching()
+            cameras = CameraDevices.all()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: CameraDevices.didChange)) { _ in
+            cameras = CameraDevices.all()
+        }
+    }
+}
+
+/// A miniature recording area showing the bubble's shape, size, corner and border.
+private struct CameraLayoutPreview: View {
+    let shape: CameraStyle.Shape
+    let size: CameraStyle.Size
+    let position: CameraStyle.Position
+    let border: CameraStyle.Border
+
+    var body: some View {
+        let frame = CGSize(width: 200, height: 125)
+        // The recording area is drawn at about 1/7 scale.
+        let height = size.points / 7
+        let bubble = CGSize(width: height * shape.aspect, height: height)
+        let radius = shape.cornerRadius(for: bubble)
+        ZStack(alignment: alignment) {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(LinearGradient(colors: [Color.blue.opacity(0.25), Color.purple.opacity(0.18)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.primary.opacity(0.15)))
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(Color.gray.opacity(0.55))
+                .overlay(Image(systemName: "person.fill").font(.system(size: height * 0.5)).foregroundStyle(.white.opacity(0.9)))
+                .overlay(ring(radius: radius))
+                .frame(width: bubble.width, height: bubble.height)
+                .shadow(color: border.glows ? Color(nsColor: border.color ?? .white).opacity(0.9) : .black.opacity(0.25),
+                        radius: border.glows ? 5 : 2, y: border.glows ? 0 : 1)
+                .padding(8)
+        }
+        .frame(width: frame.width, height: frame.height)
+        .animation(.easeOut(duration: 0.2), value: position)
+        .animation(.easeOut(duration: 0.2), value: shape)
+        .animation(.easeOut(duration: 0.2), value: size)
+        .animation(.easeOut(duration: 0.2), value: border)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Preview: \(shape.title) camera, \(size.title), \(position.title)")
+    }
+
+    @ViewBuilder
+    private func ring(radius: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        if border == .rainbow {
+            shape.strokeBorder(AngularGradient(colors: CameraStyle.Border.rainbowColors.map { Color(nsColor: $0) },
+                                               center: .center), lineWidth: 1.5)
+        } else {
+            shape.strokeBorder(border.color.map { Color(nsColor: $0) } ?? .clear, lineWidth: border == .none ? 0 : 1.5)
+        }
+    }
+
+    private var alignment: Alignment {
+        switch position {
+        case .topLeft: return .topLeading
+        case .topRight: return .topTrailing
+        case .bottomLeft: return .bottomLeading
+        case .bottomRight: return .bottomTrailing
+        }
     }
 }

@@ -28,6 +28,16 @@ enum Preferences {
         case menuBarIconTemplate
         case copyPasteSound
         case linkPreviews
+        case allInOneScreenshotTarget
+        case allInOneRecordTarget
+        case recordCamera
+        case recordCameraID
+        case cameraShape
+        case cameraSize
+        case cameraPosition
+        case cameraBorder
+        case cameraMirror
+        case recordVoiceSeparately
     }
 
     static var defaults: UserDefaults { .standard }
@@ -74,6 +84,8 @@ enum Preferences {
             Key.menuBarIconTemplate.rawValue: true,
             Key.copyPasteSound.rawValue: true,
             Key.linkPreviews.rawValue: true,
+            Key.recordCamera.rawValue: false,
+            Key.cameraMirror.rawValue: true,
         ])
     }
 
@@ -108,6 +120,24 @@ enum Preferences {
             return id?.isEmpty == false ? id : nil
         }
         set { defaults.set(newValue, forKey: Key.recordMicrophoneID.rawValue) }
+    }
+    /// Also save the microphone as its own audio file.
+    static var recordVoiceSeparately: Bool {
+        get { defaults.bool(forKey: Key.recordVoiceSeparately.rawValue) }
+        set { defaults.set(newValue, forKey: Key.recordVoiceSeparately.rawValue) }
+    }
+    /// Show the camera bubble in recordings.
+    static var recordCamera: Bool {
+        get { defaults.bool(forKey: Key.recordCamera.rawValue) }
+        set { defaults.set(newValue, forKey: Key.recordCamera.rawValue) }
+    }
+    /// The chosen camera's unique ID; nil means the system default camera.
+    static var recordCameraID: String? {
+        get {
+            let id = defaults.string(forKey: Key.recordCameraID.rawValue)
+            return id?.isEmpty == false ? id : nil
+        }
+        set { defaults.set(newValue, forKey: Key.recordCameraID.rawValue) }
     }
     /// Seconds of 3-2-1 countdown before recording starts; 0 starts instantly.
     static var recordCountdownSeconds: Int {

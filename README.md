@@ -38,7 +38,7 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 ## What's new
 
 **0.5.6**
-- **All-in-One, everything in one bar.** Screenshot ▾ and Record ▾ each offer Selected Area, Full Screen or Window. Copy the area with <kbd>⌘</kbd><kbd>C</kbd>, and use F / W (⇧F / ⇧W to record) as quick keys.
+- **All-in-One, everything in one bar.** **Screenshot** and **Record** remember what you used last (area, full screen or window), so one click repeats it. Click the small icon on either button to pick another target, or press ‹ to go back. Copy, Copy Text, Pin and Color sit next to them as icons. Copy the area with <kbd>⌘</kbd><kbd>C</kbd>, and use F / W (⇧F / ⇧W to record) as quick keys.
 - **Record a window.** Hover to highlight it, click to record.
 - **Permissions stay after updates.** Releases are signed with one stable certificate (from 0.5.5), and the Permissions page can repair stale entries.
 - **Dark-mode app icon**, a Liquid Glass All-in-One toolbar, and shortcuts grouped by category.
@@ -84,22 +84,24 @@ The first time you open Marquee, a short walkthrough sets up permissions and sho
 
 Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar appears right away. Until you select an area, actions use the whole screen.
 
-- **Screenshot ▾** and **Record ▾**: the button uses the selected area; the ▾ menu offers **Selected Area**, **Full Screen** or **Window…**.
+- **Screenshot** and **Record** repeat what you used last: an area, the full screen or a window. A selection always wins. The small icon at the end of each button shows the target; click it to choose **Area**, **Full Screen** or **Window** (‹ or <kbd>Esc</kbd> goes back). Your choice is remembered.
 - **Copy** (<kbd>⌘</kbd><kbd>C</kbd> or <kbd>⌃</kbd><kbd>C</kbd>) puts the area straight on the clipboard.
 - **Copy Text** (T), **Pin** (P), **Color** (C), and a gear (,) for Settings.
 - **Drag** to select; drag elsewhere for a new selection, inside it to move it, or a handle to resize it. Arrow keys nudge it (⇧ for 10), <kbd>⌫</kbd> goes back to the whole screen, <kbd>Esc</kbd> cancels.
 
 | Key | Action |
 |---|---|
-| <kbd>↩</kbd> | Screenshot the selected area |
+| <kbd>↩</kbd> | Screenshot (the selection, or your last target) |
 | <kbd>F</kbd> / <kbd>W</kbd> | Screenshot the full screen / a window |
-| <kbd>R</kbd> | Record the selected area |
+| <kbd>S</kbd> | Scrolling capture of the selection |
+| <kbd>R</kbd> | Record (the selection, or your last target) |
 | <kbd>⇧</kbd><kbd>F</kbd> / <kbd>⇧</kbd><kbd>W</kbd> | Record the full screen / a window |
 | <kbd>⌘</kbd><kbd>C</kbd> | Copy the area to the clipboard |
 
 ### Capture
 
 - **Area, window or full screen.** Uses the native macOS crosshair, so Space switches to window mode and Esc cancels.
+- **Scrolling capture** <sup>macOS 14+</sup>. Select the part that scrolls, then scroll down (or press **Auto-scroll**) and press **Done**: Marquee stitches one long screenshot. Fixed headers and bottom bars appear once. Start it from All-in-One (Screenshot → Scrolling, or press S), the menu, Home, or a shortcut you set. Auto-scroll needs the Accessibility permission.
 - **Self-timer.** Captures the full screen after 5 seconds.
 - **Copy text (OCR).** Select part of the screen and the text in it goes to your clipboard. It uses Apple's Vision framework on your Mac.
 - **Quick Access overlay.** A thumbnail appears after each capture. Copy it, save it, annotate it, pin it, or drag it straight into Slack, Mail or Finder.
@@ -111,6 +113,8 @@ Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar app
 - **Area or full screen** to MP4 (H.264), at 30 or 60 fps.
 - **Recording toolbar.** After you pick the area, a toolbar appears under it. Choose any microphone (built-in, USB or Bluetooth) with a live level meter, turn desktop audio on or off, then press Record. Recording starts instantly or after a 3, 5 or 10 second countdown that ends with "Go", whichever you choose in Settings.
 - **Microphone and desktop audio together**, mixed into one soundtrack that plays everywhere.
+- **Your voice as its own file.** Turn on **Also Save My Voice as a Separate File** (microphone menu or Settings → Recording) and your microphone is saved as an .m4a next to the video, for editing.
+- **Camera bubble.** Show yourself in the recording with any connected camera (built-in, USB, capture card, virtual camera, iPhone or Desk View): pick a camera, a shape (circle, rounded, square, portrait), a size, a corner and a border, including yellow, blue, pink and rainbow glows, from the **Camera** menu on the recording toolbar or in Settings → Recording. Drag the bubble anywhere, even while recording.
 - **While recording:** a timer, the mic meter, Stop and Discard on the toolbar. The menu bar shows a blinking red dot with the elapsed time (`12s`, then `4:05`, then `1:04:05`); click it to stop. The cursor is optional.
 - **Save as GIF** from the overlay with one click.
 
@@ -158,6 +162,7 @@ Marquee runs on **macOS 13 Ventura through macOS 27 Golden Gate**. On macOS 26 a
 |---|---|---|
 | **Screen & System Audio Recording** | Screenshots of other apps, screen recording, desktop audio | On your first capture. Quit and reopen Marquee after allowing it. |
 | **Microphone** | Recording your voice | The first time you turn on a microphone in the recording toolbar. |
+| **Camera** | Showing yourself in a recording | The first time you turn on the camera in the recording toolbar. |
 | **Accessibility** | Pasting a history item straight into the active app | The first time you paste from history. Without it, the item is copied and you press ⌘V yourself. |
 
 ## Using Marquee
@@ -168,7 +173,7 @@ Out of the box only two shortcuts are set: **All-in-One** (<kbd>⌥</kbd><kbd>�
 
 | Category | Actions |
 |---|---|
-| Capture | All-in-One, Capture Area, Capture Window, Capture Full Screen, Capture Full Screen in 5 Seconds, Capture Text (OCR) |
+| Capture | All-in-One, Capture Area, Capture Window, Capture Full Screen, Capture Scrolling, Capture Full Screen in 5 Seconds, Capture Text (OCR) |
 | Record | Record Area, Record Screen (press again to stop) |
 | Tools | Measure (press again or Esc to stop), Pick Color |
 | Clipboard | Clipboard History |
@@ -288,8 +293,8 @@ Turn off automatic checks in **Settings → Capture → Updates**. Updates only 
 - [x] App window, onboarding, All-in-One and color picker
 - [x] Measure guides with arrow-key nudging, and multiple displays at once
 - [x] Microphone and desktop audio in recordings
-- [ ] Webcam overlay in recordings
-- [ ] Scrolling capture
+- [x] Webcam overlay in recordings
+- [x] Scrolling capture
 - [ ] Rich text (RTF/HTML) in clipboard history
 - [ ] Exclude specific apps from history
 - [ ] Notarized releases

@@ -8,6 +8,7 @@ import SwiftUI
 final class PermissionsModel: ObservableObject {
     @Published private(set) var screenRecording = false
     @Published private(set) var microphone: AVAuthorizationStatus = .notDetermined
+    @Published private(set) var camera: AVAuthorizationStatus = .notDetermined
     @Published private(set) var accessibility = false
     @Published private(set) var clipboard: PasteboardAccess.Status = .allowed
 
@@ -16,6 +17,7 @@ final class PermissionsModel: ObservableObject {
     func refresh() {
         screenRecording = CGPreflightScreenCaptureAccess()
         microphone = AVCaptureDevice.authorizationStatus(for: .audio)
+        camera = AVCaptureDevice.authorizationStatus(for: .video)
         accessibility = AXIsProcessTrusted()
         clipboard = PasteboardAccess.status
     }
@@ -39,6 +41,18 @@ final class PermissionsModel: ObservableObject {
             }
         default:
             Self.openPrivacyPane("Privacy_Microphone")
+        }
+    }
+
+    func requestCamera() {
+        switch camera {
+        case .notDetermined:
+            Task {
+                _ = await AVCaptureDevice.requestAccess(for: .video)
+                refresh()
+            }
+        default:
+            Self.openPrivacyPane("Privacy_Camera")
         }
     }
 
@@ -124,6 +138,14 @@ struct PermissionsList: View {
                 state: model.microphone == .authorized ? .granted : (model.microphone == .notDetermined ? .optional : .blocked),
                 buttonTitle: model.microphone == .notDetermined ? "Allow…" : "Open Settings",
                 action: { model.requestMicrophone() }
+            )
+            PermissionRow(
+                symbol: "video",
+                title: "Camera",
+                detail: "Only used when you turn on the camera in the recording toolbar, to show yourself in the recording.",
+                state: model.camera == .authorized ? .granted : (model.camera == .notDetermined ? .optional : .blocked),
+                buttonTitle: model.camera == .notDetermined ? "Allow…" : "Open Settings",
+                action: { model.requestCamera() }
             )
             PermissionRow(
                 symbol: "accessibility",

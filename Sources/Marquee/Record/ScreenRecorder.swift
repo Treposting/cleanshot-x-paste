@@ -12,6 +12,10 @@ final class ScreenRecorder {
 
     private(set) var startDate: Date?
     var isRecording: Bool { stream != nil }
+    /// Save the microphone as its own audio file when the recording stops.
+    private var separateVoice = false
+    /// The voice file from the last recording, if one was saved.
+    private(set) var voiceURL: URL?
 
     /// Called when the stream stops on its own (display disconnected, permission revoked…).
     var onUnexpectedStop: (() -> Void)?
@@ -19,7 +23,10 @@ final class ScreenRecorder {
     /// - Parameters:
     ///   - desktopAudio: record what the Mac plays (other apps' sound).
     ///   - microphone: an already-running microphone to record, or nil for none.
-    func start(screen: NSScreen, rect: CGRect, desktopAudio: Bool, microphone: MicrophoneCapture?) async throws {
+    ///   - includingWindows: Marquee windows that belong in the video (the camera bubble).
+    ///   - separateVoice: also save the microphone as its own .m4a file.
+    func start(screen: NSScreen, rect: CGRect, desktopAudio: Bool, microphone: MicrophoneCapture?,
+               includingWindows: [CGWindowID] = [], separateVoice: Bool = false) async throws {
         guard !isRecording else { throw RecorderError.alreadyRecording }
 
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
@@ -28,10 +35,12 @@ final class ScreenRecorder {
             throw RecorderError.displayNotFound
         }
 
-        // Keep Marquee's own windows (selection border, overlays) out of the video.
+        // Keep Marquee's own windows (selection border, overlays) out of the video, except the
+        // ones asked for, like the camera bubble.
         let pid = ProcessInfo.processInfo.processIdentifier
         let ownApps = content.applications.filter { $0.processID == pid }
-        let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
+        let kept = content.windows.filter { includingWindows.contains($0.windowID) }
+        let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: kept)
 
         // ScreenCaptureKit wants the source rect in display-local points with a top-left origin.
         let local = CGRect(
@@ -82,6 +91,8 @@ final class ScreenRecorder {
             output?.queue.async { output?.appendMicrophone(buffer) }
         }
         self.microphone = microphone
+        self.separateVoice = separateVoice && microphone != nil
+        voiceURL = nil
         self.stream = stream
         self.output = output
         startDate = Date()
@@ -105,6 +116,17 @@ final class ScreenRecorder {
             NSLog("Marquee: stopCapture failed: \(error)")
         }
         guard let url = await output.finish() else { return nil }
+        // The voice comes out before the tracks are mixed, while it's still on its own track.
+        if separateVoice {
+            let date = Date()
+            let destination = Capture.uniqueURL(in: Preferences.saveFolder, date: date, ext: "m4a")
+            do {
+                try await AudioMixdown.exportMicrophoneTrack(of: url, to: destination)
+                voiceURL = destination
+            } catch {
+                NSLog("Marquee: couldn't save the voice file: \(error)")
+            }
+        }
         if output.hasTwoAudioTracks {
             do {
                 try await AudioMixdown.mixAudioTracks(at: url)

@@ -10,8 +10,19 @@ final class AllInOneController {
 
     /// What a screenshot or recording covers. `.area` is the current selection, or the whole
     /// screen when nothing is selected.
-    enum Target: Equatable {
+    enum Target: String, Equatable, CaseIterable {
         case area, fullScreen, window
+        /// A long screenshot of the selection (or the screen) while it scrolls. Screenshots only.
+        case scrolling
+
+        static func choices(for mode: Mode) -> [Target] {
+            mode == .screenshot ? allCases : [.area, .fullScreen, .window]
+        }
+    }
+
+    /// The two capture modes; each remembers the target last used with it.
+    enum Mode: Equatable {
+        case screenshot, record
     }
 
     enum Choice: Equatable {
@@ -29,6 +40,15 @@ final class AllInOneController {
     private let state = AllInOneState()
 
     var isActive: Bool { overlay != nil }
+
+    /// The target last chosen for a mode, kept across launches.
+    static func lastTarget(_ mode: Mode) -> Target {
+        Target(rawValue: UserDefaults.standard.string(forKey: key(for: mode)) ?? "") ?? .area
+    }
+
+    private static func key(for mode: Mode) -> String {
+        mode == .screenshot ? Preferences.Key.allInOneScreenshotTarget.rawValue : Preferences.Key.allInOneRecordTarget.rawValue
+    }
 
     func start() {
         if isActive {
@@ -55,7 +75,19 @@ final class AllInOneController {
             self?.toolbar?.alphaValue = dragging ? 0 : 1
         }
         view.onChoice = { [weak self] choice in self?.choose(choice) }
-        view.onCancel = { [weak self] in self?.dismiss() }
+        // Esc first leaves the target picker, then closes All-in-One.
+        view.onCancel = { [weak self] in
+            guard let self else { return }
+            if self.state.choosing != nil {
+                self.state.choosing = nil
+            } else {
+                self.dismiss()
+            }
+        }
+        view.target = { [weak self] mode in self?.state.effectiveTarget(mode) ?? .area }
+        state.screenshotTarget = Self.lastTarget(.screenshot)
+        state.recordTarget = Self.lastTarget(.record)
+        state.choosing = nil
         window.contentView = view
 
         NSApp.activate(ignoringOtherApps: true)
@@ -111,7 +143,6 @@ final class AllInOneController {
     private func selectionChanged() {
         guard let screen, let toolbar else { return }
         let selection = overlayView?.selection
-        state.sizeLabel = selection.map { "\(Int($0.width)) × \(Int($0.height))" } ?? "Full screen"
         state.hasSelection = selection != nil
 
         let size = toolbar.frame.size
@@ -135,6 +166,7 @@ final class AllInOneController {
         if choice == .screenshot(.fullScreen) || choice == .record(.fullScreen) {
             rect = screen.frame
         }
+        remember(choice)
         dismiss()
         if choice == .settings {
             onChoice?(choice, screen, rect)
@@ -144,6 +176,19 @@ final class AllInOneController {
         runAfter(0.15) { [weak self] in
             self?.onChoice?(choice, screen, rect)
         }
+    }
+
+    /// Saves the target of a screenshot or recording as that mode's default. A selection
+    /// always wins for the moment, so acting on one doesn't replace the saved default.
+    private func remember(_ choice: Choice) {
+        let mode: Mode, target: Target
+        switch choice {
+        case .screenshot(let t): (mode, target) = (.screenshot, t)
+        case .record(let t): (mode, target) = (.record, t)
+        default: return
+        }
+        guard !(target == .area && state.hasSelection) else { return }
+        UserDefaults.standard.set(target.rawValue, forKey: Self.key(for: mode))
     }
 
     func dismiss() {
@@ -159,8 +204,16 @@ final class AllInOneController {
 
 @MainActor
 private final class AllInOneState: ObservableObject {
-    @Published var sizeLabel = "Full screen"
     @Published var hasSelection = false
+    @Published var screenshotTarget: AllInOneController.Target = .area
+    @Published var recordTarget: AllInOneController.Target = .area
+    /// The mode whose target picker is showing, if any.
+    @Published var choosing: AllInOneController.Mode?
+
+    /// What a mode's main button does now: a selection wins, otherwise the remembered target.
+    func effectiveTarget(_ mode: AllInOneController.Mode) -> AllInOneController.Target {
+        hasSelection ? .area : (mode == .screenshot ? screenshotTarget : recordTarget)
+    }
 }
 
 private final class OverlayWindow: NSWindow {
@@ -179,6 +232,8 @@ private final class AllInOneOverlayView: NSView {
     var onDragging: ((Bool) -> Void)?
     var onChoice: ((AllInOneController.Choice) -> Void)?
     var onCancel: (() -> Void)?
+    /// The target the main Screenshot and Record actions use (Return and R).
+    var target: ((AllInOneController.Mode) -> AllInOneController.Target)?
 
     private(set) var selection: NSRect? {
         didSet {
@@ -379,7 +434,7 @@ private final class AllInOneOverlayView: NSView {
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
         case 53: onCancel?()                                   // Esc
-        case 36, 76: onChoice?(.screenshot(.area))              // Return, Enter
+        case 36, 76: onChoice?(.screenshot(target?(.screenshot) ?? .area)) // Return, Enter
         case 51, 117:                                           // Delete: back to the whole screen
             selection = nil
         case 123, 124, 125, 126:                                // Arrows nudge the selection
@@ -400,7 +455,8 @@ private final class AllInOneOverlayView: NSView {
             switch key {
             case "f": onChoice?(shift ? .record(.fullScreen) : .screenshot(.fullScreen))
             case "w": onChoice?(shift ? .record(.window) : .screenshot(.window))
-            case "r": onChoice?(.record(.area))
+            case "r": onChoice?(.record(target?(.record) ?? .area))
+            case "s": onChoice?(.screenshot(.scrolling))
             case "t": onChoice?(.copyText)
             case "p": onChoice?(.pin)
             case "c": onChoice?(.pickColor)
@@ -413,135 +469,253 @@ private final class AllInOneOverlayView: NSView {
 
 // MARK: - Toolbar
 
-/// A Liquid Glass capsule in the style of the macOS 26/27 screenshot bar. It follows the
-/// system appearance; Screenshot is the default action (Return).
+/// A compact Liquid Glass bar. Screenshot and Record each run with the target you used last
+/// (a selection always wins); the small icon at the end of each shows that target, and clicking
+/// it swaps the bar for a target picker with a back button. Then Copy, Copy Text, Pin and Color.
 @MainActor
 private struct AllInOneToolbar: View {
     @ObservedObject var state: AllInOneState
     let choose: (AllInOneController.Choice) -> Void
     let cancel: () -> Void
 
+    fileprivate static let yellow = Color(red: 1, green: 0.81, blue: 0.1)
+
     var body: some View {
         GlassGroup(spacing: 10) {
-            HStack(spacing: 4) {
-                SplitAction(
-                    main: ToolbarAction(symbol: "camera.viewfinder", title: "Screenshot", key: "↩", prominent: true) { choose(.screenshot(.area)) },
-                    areaTitle: state.hasSelection ? "Selected Area" : "Whole Screen",
-                    keys: ("↩", "F", "W"),
-                    pick: { choose(.screenshot($0)) }
-                )
-                SplitAction(
-                    main: ToolbarAction(symbol: "record.circle", title: "Record", key: "R", symbolColor: .red) { choose(.record(.area)) },
-                    areaTitle: state.hasSelection ? "Selected Area" : "Whole Screen",
-                    keys: ("R", "⇧F", "⇧W"),
-                    pick: { choose(.record($0)) }
-                )
-                ToolbarAction(symbol: "doc.on.doc", title: "Copy", key: "⌘C") { choose(.copy) }
-                ToolbarAction(symbol: "text.viewfinder", title: "Copy Text", key: "T") { choose(.copyText) }
-                ToolbarAction(symbol: "pin", title: "Pin", key: "P") { choose(.pin) }
-                ToolbarAction(symbol: "eyedropper", title: "Color", key: "C") { choose(.pickColor) }
-
-                Divider()
-                    .frame(height: 22)
-                    .padding(.horizontal, 6)
-
-                HStack(spacing: 5) {
-                    Image(systemName: state.hasSelection ? "rectangle.dashed" : "display")
-                        .font(.system(size: 11, weight: .medium))
-                    Text(state.sizeLabel)
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
-                        .lineLimit(1)
-                }
-                .foregroundStyle(.secondary)
-                .frame(width: 104)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(state.hasSelection ? "Selection \(state.sizeLabel)" : "Full screen")
-
-                CircleButton(symbol: "gearshape", help: "Marquee Settings (,)") { choose(.settings) }
-                CircleButton(symbol: "xmark", help: "Cancel (Esc)", action: cancel)
+            // Both layers always take part in layout, so the panel (sized once) fits either.
+            ZStack(alignment: .leading) {
+                main
+                    .opacity(state.choosing == nil ? 1 : 0)
+                    .allowsHitTesting(state.choosing == nil)
+                    .accessibilityHidden(state.choosing != nil)
+                TargetPicker(mode: state.choosing ?? .screenshot, state: state, choose: choose)
+                    .opacity(state.choosing == nil ? 0 : 1)
+                    .offset(x: state.choosing == nil ? 16 : 0)
+                    .allowsHitTesting(state.choosing != nil)
+                    .accessibilityHidden(state.choosing == nil)
             }
-            .padding(6)
+            .animation(.easeOut(duration: 0.18), value: state.choosing)
+            .padding(5)
             .glassSurface(Capsule())
         }
         .padding(14) // room for the glass edge and shadow
         .fixedSize()
     }
-}
 
-/// A toolbar action with a ▾ menu for choosing what it covers.
-private struct SplitAction: View {
-    let main: ToolbarAction
-    let areaTitle: String
-    let keys: (area: String, fullScreen: String, window: String)
-    let pick: (AllInOneController.Target) -> Void
-
-    var body: some View {
-        HStack(spacing: 0) {
-            main
-            Menu {
-                Button { pick(.area) } label: { Label("\(areaTitle)  (\(keys.area))", systemImage: "rectangle.dashed") }
-                Button { pick(.fullScreen) } label: { Label("Full Screen  (\(keys.fullScreen))", systemImage: "display") }
-                Button { pick(.window) } label: { Label("Window…  (\(keys.window))", systemImage: "macwindow") }
-            } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .bold))
+    private var main: some View {
+        HStack(spacing: 6) {
+            ModeButton(mode: .screenshot, state: state, choose: choose)
+            ModeButton(mode: .record, state: state, choose: choose)
+            HStack(spacing: 2) {
+                IconAction(symbol: "doc.on.doc", title: "Copy", key: "⌘C") { choose(.copy) }
+                IconAction(symbol: "text.viewfinder", title: "Copy text", key: "T") { choose(.copyText) }
+                IconAction(symbol: "pin", title: "Pin", key: "P") { choose(.pin) }
+                IconAction(symbol: "eyedropper", title: "Pick color", key: "C") { choose(.pickColor) }
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .frame(width: 22, height: 38)
-            .contentShape(Rectangle())
-            .help("Selected area, full screen or a window")
-            .accessibilityLabel("\(main.title) options")
+            CircleButton(symbol: "gearshape", help: "Marquee Settings (,)") { choose(.settings) }
+            CircleButton(symbol: "xmark", help: "Cancel (Esc)", action: cancel)
         }
     }
 }
 
-private struct ToolbarAction: View {
-    let symbol: String
-    let title: String
-    let key: String
-    var prominent = false
-    var symbolColor: Color? = nil
+/// How each target is shown and named.
+private extension AllInOneController.Target {
+    func symbol(hasSelection: Bool) -> String {
+        switch self {
+        case .area: return hasSelection ? "rectangle.dashed" : "display"
+        case .fullScreen: return "display"
+        case .window: return "macwindow"
+        case .scrolling: return "scroll"
+        }
+    }
+
+    var pickerSymbol: String {
+        switch self {
+        case .area: return "rectangle.dashed"
+        case .fullScreen: return "display"
+        case .window: return "macwindow"
+        case .scrolling: return "scroll"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .area: return "Area"
+        case .fullScreen: return "Full Screen"
+        case .window: return "Window"
+        case .scrolling: return "Scrolling"
+        }
+    }
+
+    func summary(hasSelection: Bool) -> String {
+        switch self {
+        case .area: return hasSelection ? "the selection" : "the whole screen (or drag to select an area)"
+        case .fullScreen: return "the full screen"
+        case .window: return "a window you click"
+        case .scrolling: return hasSelection ? "the selection as you scroll it" : "the screen as you scroll"
+        }
+    }
+}
+
+private extension AllInOneController.Mode {
+    var title: String { self == .screenshot ? "Screenshot" : "Record" }
+    var symbol: String { self == .screenshot ? "camera.fill" : "record.circle.fill" }
+    var key: String { self == .screenshot ? "↩" : "R" }
+
+    func choice(_ target: AllInOneController.Target) -> AllInOneController.Choice {
+        self == .screenshot ? .screenshot(target) : .record(target)
+    }
+}
+
+/// Screenshot or Record: the main part runs it with the current target; the small target icon
+/// at the end opens the target picker.
+private struct ModeButton: View {
+    let mode: AllInOneController.Mode
+    @ObservedObject var state: AllInOneState
+    let choose: (AllInOneController.Choice) -> Void
+    @State private var hoverMain = false
+    @State private var hoverTarget = false
+
+    private var isShot: Bool { mode == .screenshot }
+    private var fill: Color { isShot ? AllInOneToolbar.yellow : Color.red.opacity(0.14) }
+    private var ink: Color { isShot ? Color.black.opacity(0.85) : .red }
+
+    var body: some View {
+        let target = state.effectiveTarget(mode)
+        HStack(spacing: 0) {
+            Button {
+                choose(mode.choice(target))
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: mode.symbol).font(.system(size: 13, weight: .semibold))
+                    Text(mode.title)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .lineLimit(1)
+                }
+                .fixedSize()
+                .padding(.leading, 12)
+                .padding(.trailing, 8)
+                .frame(height: 34)
+                .background(Color.primary.opacity(hoverMain ? 0.08 : 0))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .onHover { hoverMain = $0 }
+            .help("\(mode.title) \(target.summary(hasSelection: state.hasSelection)) (\(mode.key))")
+            .accessibilityLabel("\(mode.title) \(target.summary(hasSelection: state.hasSelection))")
+
+            Rectangle().fill(ink.opacity(0.25)).frame(width: 1, height: 18)
+
+            Button {
+                state.choosing = mode
+            } label: {
+                Image(systemName: target.symbol(hasSelection: state.hasSelection))
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(width: 30, height: 34)
+                    .background(Color.primary.opacity(hoverTarget ? 0.1 : 0))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .onHover { hoverTarget = $0 }
+            .help("Change what \(mode.title) covers")
+            .accessibilityLabel("Change what \(mode.title) covers")
+        }
+        .foregroundStyle(ink)
+        .background(fill, in: Capsule())
+        .clipShape(Capsule())
+        .animation(.easeOut(duration: 0.12), value: hoverMain)
+        .animation(.easeOut(duration: 0.12), value: hoverTarget)
+    }
+}
+
+/// Shown in place of the main bar: back, the mode, and Area / Full Screen / Window. Picking one
+/// runs it and makes it the default.
+private struct TargetPicker: View {
+    let mode: AllInOneController.Mode
+    @ObservedObject var state: AllInOneState
+    let choose: (AllInOneController.Choice) -> Void
+
+    private var current: AllInOneController.Target {
+        mode == .screenshot ? state.screenshotTarget : state.recordTarget
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            CircleButton(symbol: "chevron.left", help: "Back (Esc)") { state.choosing = nil }
+            HStack(spacing: 5) {
+                Image(systemName: mode.symbol)
+                    .foregroundStyle(mode == .screenshot ? AllInOneToolbar.yellow : .red)
+                Text(mode.title).lineLimit(1)
+            }
+            .font(.system(size: 12.5, weight: .semibold))
+            .fixedSize()
+            .padding(.horizontal, 6)
+            .accessibilityAddTraits(.isHeader)
+            ForEach(AllInOneController.Target.choices(for: mode), id: \.self) { target in
+                TargetChip(target: target, selected: target == current,
+                           help: "\(mode.title) \(target.summary(hasSelection: state.hasSelection))") {
+                    choose(mode.choice(target))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+private struct TargetChip: View {
+    let target: AllInOneController.Target
+    let selected: Bool
+    let help: String
     let action: () -> Void
     @State private var hovering = false
 
-    private static let yellow = Color(red: 1, green: 0.81, blue: 0.1)
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: target.pickerSymbol).font(.system(size: 12, weight: .medium))
+                Text(target.title)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .fixedSize()
+            .padding(.horizontal, 12)
+            .frame(height: 34)
+            .background(Capsule().fill(selected ? Color.accentColor.opacity(0.22)
+                                       : Color.primary.opacity(hovering ? 0.1 : 0.05)))
+            .overlay(Capsule().strokeBorder(selected ? Color.accentColor.opacity(0.6) : .clear))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .help(help)
+        .accessibilityLabel(target.title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// One icon button; its tooltip gives the name and key.
+private struct IconAction: View {
+    let symbol: String
+    let title: String
+    let key: String
+    let action: () -> Void
+    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 7) {
-                Image(systemName: symbol)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(prominent ? Color.black.opacity(0.85) : (symbolColor ?? .primary))
-                Text(title)
-                    .font(.system(size: 12.5, weight: .semibold))
-                Text(key)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .padding(.horizontal, 5)
-                    .frame(minWidth: 18, minHeight: 17)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(prominent ? Color.black.opacity(0.12) : Color.primary.opacity(0.08))
-                    )
-                    .opacity(0.8)
-            }
-            .foregroundStyle(prominent ? Color.black.opacity(0.85) : .primary)
-            .padding(.leading, 12)
-            .padding(.trailing, 9)
-            .frame(height: 38)
-            .background(
-                Capsule().fill(prominent
-                    ? Self.yellow.opacity(hovering ? 1 : 0.92)
-                    : Color.primary.opacity(hovering ? 0.09 : 0))
-            )
-            .contentShape(Capsule())
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(Color.primary.opacity(hovering ? 0.1 : 0)))
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
         .help("\(title) (\(key))")
         .accessibilityLabel(title)
+        .accessibilityHint("Shortcut \(key)")
     }
 }
 

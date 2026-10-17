@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Runs a recording from start to finish:
-/// pick an area → toolbar (choose mic and desktop audio) → countdown → record → stop.
+/// pick an area → toolbar (choose mic, desktop audio and camera) → countdown → record → stop.
 @MainActor
 final class RecordingController {
     static let shared = RecordingController()
@@ -15,6 +15,7 @@ final class RecordingController {
 
     private let recorder = ScreenRecorder()
     private var microphone: MicrophoneCapture?
+    private let camera = CameraBubble()
     private var session: RecordingSession?
     private var target: (screen: NSScreen, rect: CGRect)?
     private var toolbar: NSPanel?
@@ -31,6 +32,16 @@ final class RecordingController {
 
     private init() {
         recorder.onUnexpectedStop = { [weak self] in self?.stop() }
+        camera.onCameraLost = { [weak self] replacement in
+            guard let session = self?.session else { return }
+            if let replacement {
+                session.cameraName = replacement
+                Toast.show("Camera disconnected. Using \(replacement)", duration: 2.5)
+            } else {
+                session.cameraEnabled = false
+                Toast.show("Camera disconnected", duration: 2.5)
+            }
+        }
     }
 
     // MARK: - Entry point (shortcut or menu)
@@ -65,6 +76,7 @@ final class RecordingController {
             micEnabled: Preferences.recordMicrophone,
             micID: Preferences.recordMicrophoneID,
             desktopAudio: Preferences.recordAudio,
+            separateVoice: Preferences.recordVoiceSeparately,
             sizeLabel: sizeLabel
         )
         self.session = session
@@ -73,6 +85,7 @@ final class RecordingController {
 
         if !isFullScreen { recorder.showBorder(around: rect) }
         if session.micEnabled { startMicrophone() }
+        if Preferences.recordCamera { startCamera() }
         showToolbar(session: session, screen: screen, rect: rect)
         startMeter()
     }
@@ -100,6 +113,10 @@ final class RecordingController {
             empty.isEnabled = false
             menu.addItem(empty)
         }
+        menu.addItem(.separator())
+        menu.addItem(ActionMenuItem("Also Save My Voice as a Separate File", checked: session.separateVoice) { [weak self] in
+            self?.toggleSeparateVoice()
+        })
         if session.micProblem != nil {
             menu.addItem(.separator())
             let settings = NSMenuItem(title: "Open Microphone Settings…", action: #selector(MenuTarget.openSettings), keyEquivalent: "")
@@ -125,6 +142,111 @@ final class RecordingController {
             Preferences.recordMicrophone = false
             microphone?.stop()
             microphone = nil
+        }
+    }
+
+    private func toggleSeparateVoice() {
+        guard let session else { return }
+        session.separateVoice.toggle()
+        Preferences.recordVoiceSeparately = session.separateVoice
+        if session.separateVoice && !session.micEnabled {
+            Toast.show("Choose a microphone to save your voice", duration: 2.5)
+        }
+    }
+
+    // MARK: - Camera
+
+    /// Camera on or off, which camera, and its look: shape, size, corner, border, mirror.
+    func showCameraMenu() {
+        guard let session else { return }
+        let menu = NSMenu()
+        menu.addItem(ActionMenuItem("No Camera", checked: !session.cameraEnabled) { [weak self] in self?.selectCamera(nil) })
+        menu.addItem(.separator())
+        let devices = CameraDevices.all()
+        // The camera actually in use (the saved one may be unplugged).
+        let selected = session.cameraEnabled ? (camera.deviceID ?? Preferences.recordCameraID) : nil
+        for device in devices {
+            menu.addItem(ActionMenuItem(device.name, checked: session.cameraEnabled && device.id == selected) { [weak self] in
+                self?.selectCamera(device.id)
+            })
+        }
+        if devices.isEmpty {
+            let empty = NSMenuItem(title: "No cameras found", action: nil, keyEquivalent: "")
+            empty.isEnabled = false
+            menu.addItem(empty)
+        }
+        menu.addItem(.separator())
+        menu.addItem(submenu("Shape", CameraStyle.Shape.allCases.map { shape in
+            ActionMenuItem(shape.title, checked: CameraStyle.shape == shape, symbol: shape.symbol) { CameraStyle.shape = shape }
+        }))
+        menu.addItem(submenu("Size", CameraStyle.Size.allCases.map { size in
+            ActionMenuItem(size.title, checked: CameraStyle.size == size) { CameraStyle.size = size }
+        }))
+        menu.addItem(submenu("Position", CameraStyle.Position.allCases.map { position in
+            ActionMenuItem(position.title, checked: CameraStyle.position == position, symbol: position.symbol) { [weak self] in
+                CameraStyle.position = position
+                self?.camera.move(to: position)
+            }
+        }))
+        menu.addItem(submenu("Border", CameraStyle.Border.allCases.map { border in
+            ActionMenuItem(border.title, checked: CameraStyle.border == border) { CameraStyle.border = border }
+        }))
+        menu.addItem(ActionMenuItem("Mirror", checked: CameraStyle.mirror) { CameraStyle.mirror.toggle() })
+        menu.addItem(.separator())
+        menu.addItem(ActionMenuItem("Camera Settings…", checked: false) {
+            WindowManager.shared.showMain(.settings)
+        })
+        if session.cameraProblem != nil {
+            menu.addItem(ActionMenuItem("Open Camera Privacy Settings…", checked: false) {
+                PermissionsModel.openPrivacyPane("Privacy_Camera")
+            })
+        }
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+    }
+
+    private func submenu(_ title: String, _ items: [NSMenuItem]) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        let menu = NSMenu(title: title)
+        items.forEach(menu.addItem)
+        item.submenu = menu
+        return item
+    }
+
+    private func selectCamera(_ id: String?) {
+        guard let session else { return }
+        if let id {
+            Preferences.recordCameraID = id
+            Preferences.recordCamera = true
+            if camera.isVisible {
+                do {
+                    try camera.switchCamera(to: id)
+                    session.cameraName = camera.deviceName ?? "Camera"
+                } catch {
+                    session.cameraProblem = error.localizedDescription
+                }
+            } else {
+                startCamera()
+            }
+        } else {
+            Preferences.recordCamera = false
+            session.cameraEnabled = false
+            session.cameraProblem = nil
+            camera.hide()
+        }
+    }
+
+    private func startCamera() {
+        guard let session, let target else { return }
+        Task {
+            do {
+                try await camera.show(in: target.rect, deviceID: Preferences.recordCameraID)
+                session.cameraEnabled = true
+                session.cameraName = camera.deviceName ?? "Camera"
+                session.cameraProblem = nil
+            } catch {
+                session.cameraEnabled = false
+                session.cameraProblem = error.localizedDescription
+            }
         }
     }
 
@@ -205,7 +327,9 @@ final class RecordingController {
             do {
                 try await recorder.start(
                     screen: target.screen, rect: target.rect,
-                    desktopAudio: session.desktopAudio, microphone: mic
+                    desktopAudio: session.desktopAudio, microphone: mic,
+                    includingWindows: session.cameraEnabled ? camera.windowID.map { [$0] } ?? [] : [],
+                    separateVoice: session.separateVoice
                 )
                 session.phase = .recording
                 startClock()
@@ -232,9 +356,13 @@ final class RecordingController {
             }
             if discard {
                 try? FileManager.default.removeItem(at: url)
+                if let voice = recorder.voiceURL { try? FileManager.default.removeItem(at: voice) }
                 Toast.show("Recording discarded")
             } else {
                 onFinished?(url)
+                if let voice = recorder.voiceURL {
+                    Toast.show("Voice saved to \(voice.deletingLastPathComponent().lastPathComponent)", duration: 2.5)
+                }
             }
         }
     }
@@ -260,6 +388,7 @@ final class RecordingController {
         clockTimer = nil
         microphone?.stop()
         microphone = nil
+        camera.hide()
         toolbar?.orderOut(nil)
         toolbar = nil
         hideCountdown()
@@ -303,9 +432,10 @@ final class RecordingController {
             stop: { [weak self] in self?.stop() },
             discard: { [weak self] in self?.discard() },
             showMicMenu: { [weak self] in self?.showMicMenu() },
-            toggleDesktopAudio: { [weak self] in self?.toggleDesktopAudio() }
+            toggleDesktopAudio: { [weak self] in self?.toggleDesktopAudio() },
+            showCameraMenu: { [weak self] in self?.showCameraMenu() }
         )
-        let size = NSSize(width: 720, height: 64)
+        let size = NSSize(width: 860, height: 64)
         let panel = KeyablePanel(
             contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -377,4 +507,23 @@ private final class MenuTarget: NSObject {
             NSWorkspace.shared.open(url)
         }
     }
+}
+
+/// A menu item that runs a closure, with an optional check mark and SF Symbol.
+@MainActor
+private final class ActionMenuItem: NSMenuItem {
+    private let handler: @MainActor () -> Void
+
+    init(_ title: String, checked: Bool, symbol: String? = nil, handler: @escaping @MainActor () -> Void) {
+        self.handler = handler
+        super.init(title: title, action: #selector(run), keyEquivalent: "")
+        target = self
+        state = checked ? .on : .off
+        if let symbol { image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil) }
+    }
+
+    @available(*, unavailable)
+    required init(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    @objc private func run() { handler() }
 }
