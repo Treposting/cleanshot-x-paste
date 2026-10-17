@@ -8,7 +8,7 @@ enum UpdateError: LocalizedError {
     case unpackFailed
     case wrongApp
     case badSignature
-    case notWritable
+    case cannotStartInstaller
 
     var errorDescription: String? {
         switch self {
@@ -18,8 +18,8 @@ enum UpdateError: LocalizedError {
         case .unpackFailed: return "The downloaded update couldn't be unpacked."
         case .wrongApp: return "The downloaded file isn't the expected Marquee version, so it wasn't installed."
         case .badSignature: return "The update's code signature didn't verify, so it wasn't installed."
-        case .notWritable:
-            return "Marquee can't replace itself where it's running from. Move Marquee to your Applications folder, open it from there, and try again."
+        case .cannotStartInstaller:
+            return "Marquee couldn't start installing the update. Download it from the releases page instead."
         }
     }
 }
@@ -98,35 +98,116 @@ enum UpdateInstaller {
         return app
     }
 
-    /// Starts a small shell helper that waits for Marquee to quit, swaps the app bundle,
-    /// and opens the new version. The caller quits the app right after this returns.
+    /// Starts a small helper that waits for every running copy of Marquee to quit, puts the new
+    /// version in place and opens it. The caller quits the app right after this returns.
+    ///
+    /// The update goes where Marquee runs now. When that can't be written (opened from the disk
+    /// image, or a translocated copy), it goes to /Applications instead. When the folder needs
+    /// an administrator (a standard account), macOS asks for a password.
+    @MainActor
     static func replaceAndRelaunch(with staged: URL) throws {
         let current = Bundle.main.bundleURL
-        let parent = current.deletingLastPathComponent()
-        guard !current.path.contains("/AppTranslocation/"),
-              FileManager.default.isWritableFile(atPath: parent.path) else {
-            throw UpdateError.notWritable
+        let destination = installDestination(for: current)
+        let needsAdmin = !FileManager.default.isWritableFile(atPath: destination.deletingLastPathComponent().path)
+        let pids = [ProcessInfo.processInfo.processIdentifier] + quitOtherCopies()
+
+        let swap = swapScript(destination: destination, staged: staged)
+        let folder = staged.deletingLastPathComponent()
+        let swapScript = folder.appendingPathComponent("install.sh")
+        try swap.write(to: swapScript, atomically: true, encoding: .utf8)
+
+        // The swap runs as the user, or through the administrator prompt; opening the app
+        // always runs as the user.
+        let runSwap = needsAdmin
+            ? "/usr/bin/osascript -e \(quoted(adminAppleScript(running: swapScript)))"
+            : "/bin/sh \(quoted(swapScript.path))"
+        let helper = """
+        \(waitScript(for: pids))
+        \(runSwap)
+        if [ -d \(quoted(destination.path)) ]; then
+          /usr/bin/open \(quoted(destination.path))
+        else
+          /usr/bin/open \(quoted(current.path))
+        fi
+        """
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", helper]
+        do {
+            try process.run()
+        } catch {
+            throw UpdateError.cannotStartInstaller
         }
-        let script = """
-        while /bin/kill -0 "$PID" 2>/dev/null; do /bin/sleep 0.2; done
+    }
+
+    /// Shell script that puts `staged` at `destination`, keeping the old copy until the new one
+    /// is in place and restoring it if the move fails.
+    static func swapScript(destination: URL, staged: URL) -> String {
+        """
+        OLD=\(quoted(destination.path))
+        NEW=\(quoted(staged.path))
         /bin/rm -rf "$OLD.previous"
-        if /bin/mv "$OLD" "$OLD.previous" && /bin/mv "$NEW" "$OLD"; then
-          /bin/rm -rf "$OLD.previous"
-        elif [ -d "$OLD.previous" ] && [ ! -d "$OLD" ]; then
-          /bin/mv "$OLD.previous" "$OLD"
+        if [ -e "$OLD" ]; then
+          if /bin/mv "$OLD" "$OLD.previous" && /bin/mv "$NEW" "$OLD"; then
+            /bin/rm -rf "$OLD.previous"
+          elif [ -d "$OLD.previous" ] && [ ! -d "$OLD" ]; then
+            /bin/mv "$OLD.previous" "$OLD"
+          fi
+        else
+          /bin/mv "$NEW" "$OLD"
         fi
         /usr/bin/xattr -dr com.apple.quarantine "$OLD" 2>/dev/null
-        /usr/bin/open "$OLD"
+        exit 0
         """
-        let helper = Process()
-        helper.executableURL = URL(fileURLWithPath: "/bin/sh")
-        helper.arguments = ["-c", script]
-        helper.environment = [
-            "PID": String(ProcessInfo.processInfo.processIdentifier),
-            "OLD": current.path,
-            "NEW": staged.path,
-        ]
-        try helper.run()
+    }
+
+    /// Where the new version goes: the running copy's place, unless that can't be replaced.
+    static func installDestination(for current: URL) -> URL {
+        let readOnly = (try? current.resourceValues(forKeys: [.volumeIsReadOnlyKey]).volumeIsReadOnly) ?? false
+        if current.path.contains("/AppTranslocation/") || readOnly {
+            return URL(fileURLWithPath: "/Applications/Marquee.app")
+        }
+        return current
+    }
+
+    /// Asks every other running copy of Marquee (another build, a copy elsewhere) to quit, so
+    /// the new version opens instead of macOS bringing an old copy forward. Returns their PIDs.
+    @MainActor
+    static func quitOtherCopies() -> [pid_t] {
+        guard let bundleID = Bundle.main.bundleIdentifier else { return [] }
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .filter { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }
+        others.forEach { $0.terminate() }
+        return others.map(\.processIdentifier)
+    }
+
+    /// Shell lines that wait for each process to exit, force-quitting one that takes over 10 s.
+    static func waitScript(for pids: [pid_t]) -> String {
+        """
+        for P in \(pids.map(String.init).joined(separator: " ")); do
+          n=0
+          while /bin/kill -0 "$P" 2>/dev/null; do
+            /bin/sleep 0.2
+            n=$((n + 1))
+            if [ "$n" -eq 50 ]; then /bin/kill -9 "$P" 2>/dev/null; fi
+          done
+        done
+        """
+    }
+
+    /// AppleScript that runs a shell script with the administrator password prompt.
+    static func adminAppleScript(running script: URL) -> String {
+        "do shell script \"/bin/sh \" & quoted form of \(appleScriptString(script.path)) with administrator privileges"
+    }
+
+    /// A shell single-quoted literal.
+    static func quoted(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    /// An AppleScript string literal.
+    private static func appleScriptString(_ value: String) -> String {
+        "\"" + value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 
     // MARK: - Signature checks

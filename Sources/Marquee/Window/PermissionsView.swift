@@ -83,19 +83,20 @@ final class PermissionsModel: ObservableObject {
     }
 
     /// Screen Recording only takes effect after Marquee restarts.
-    /// A helper waits until this process has really exited (opening the app while it's still
-    /// quitting just activates the old copy), then opens it again. If the bundle path is gone,
+    /// A helper waits until this process (and any other running copy) has really exited
+    /// (opening the app while one is still running just activates it), then opens it again. If the bundle path is gone,
     /// e.g. a translocated copy, it opens Marquee by bundle identifier instead.
     static func relaunch() {
+        // Other running copies quit too, or macOS would bring one of them forward instead.
+        let pids = [ProcessInfo.processInfo.processIdentifier] + UpdateInstaller.quitOtherCopies()
         let script = """
-        while /bin/kill -0 "$PID" 2>/dev/null; do /bin/sleep 0.2; done
+        \(UpdateInstaller.waitScript(for: pids))
         /usr/bin/open "$APP" 2>/dev/null || /usr/bin/open -b "$BUNDLE_ID"
         """
         let helper = Process()
         helper.executableURL = URL(fileURLWithPath: "/bin/sh")
         helper.arguments = ["-c", script]
         helper.environment = [
-            "PID": String(ProcessInfo.processInfo.processIdentifier),
             "APP": Bundle.main.bundlePath,
             "BUNDLE_ID": Bundle.main.bundleIdentifier ?? "io.github.treposting.marquee",
         ]

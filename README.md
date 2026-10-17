@@ -261,6 +261,12 @@ macOS ties permissions to how an app is signed. Older releases were signed ad ho
 </details>
 
 <details>
+<summary><b>"Marquee can't replace itself where it's running from" when updating</b></summary>
+
+Versions up to 0.5.11 showed this when Marquee was opened straight from the disk image, or from a copy macOS runs in a protected place. From 0.5.12 the updater installs into Applications instead (asking for your password if your account needs it) and closes any other copy of Marquee first. To get past it once: download the DMG from the [releases page](https://github.com/Treposting/marquee/releases/latest), drag Marquee into Applications, replace the old copy, and open it from there.
+</details>
+
+<details>
 <summary><b>⇧⌘V no longer does "Paste and Match Style"</b></summary>
 
 Marquee uses that shortcut for clipboard history by default. Change it in **Settings → Shortcuts** if you'd rather keep the app's own shortcut.
