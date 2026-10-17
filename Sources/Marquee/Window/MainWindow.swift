@@ -53,6 +53,8 @@ final class WindowManager: NSObject, NSWindowDelegate {
                 backing: .buffered, defer: false
             )
             window.title = "Marquee"
+            // Each page shows its own large title; the floating glass sidebar carries the window.
+            window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
             window.isReleasedWhenClosed = false
             window.minSize = NSSize(width: 860, height: 560)
@@ -183,16 +185,14 @@ private struct PermissionsPage: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Permissions").font(.system(size: 20, weight: .bold))
-                    Text("Marquee asks macOS only for what each feature needs. Nothing leaves your Mac.")
-                        .foregroundStyle(.secondary)
-                }
+            VStack(alignment: .leading, spacing: 0) {
+                PageHeader(title: "Permissions",
+                           subtitle: "Marquee asks macOS only for what each feature needs. Nothing leaves your Mac.")
                 PermissionsList(model: model)
+                    .padding(.horizontal, Page.gutter)
+                    .padding(.bottom, Page.gutter)
             }
-            .padding(24)
-            .frame(maxWidth: 760, alignment: .leading)
+            .frame(maxWidth: 820, alignment: .leading)
         }
     }
 }

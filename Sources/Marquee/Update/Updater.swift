@@ -178,10 +178,13 @@ final class Updater: ObservableObject {
         if window == nil {
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 480, height: 360),
-                styleMask: [.titled, .closable],
+                styleMask: [.titled, .closable, .fullSizeContentView],
                 backing: .buffered, defer: false
             )
             window.title = "Software Update"
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.isMovableByWindowBackground = true
             window.isReleasedWhenClosed = false
             window.contentViewController = NSHostingController(rootView: UpdateView(updater: self))
             window.center()
@@ -205,23 +208,33 @@ struct UpdateView: View {
             HStack(alignment: .top, spacing: 14) {
                 Image(nsImage: NSApp.applicationIconImage)
                     .resizable()
-                    .frame(width: 56, height: 56)
+                    .frame(width: 64, height: 64)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.title3.weight(.semibold))
-                    Text(subtitle).foregroundStyle(.secondary)
+                    Text(title)
+                        .font(.system(size: 20, weight: .bold))
+                        .accessibilityAddTraits(.isHeader)
+                    Text(subtitle)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
             content
 
-            HStack {
-                leadingButtons
-                Spacer()
-                trailingButtons
+            GlassGroup(spacing: 8) {
+                HStack(spacing: 8) {
+                    leadingButtons
+                    Spacer()
+                    trailingButtons
+                }
             }
+            .controlSize(.large)
         }
-        .padding(20)
-        .frame(width: 480)
+        .padding(.horizontal, 24)
+        .padding(.top, 34)
+        .padding(.bottom, 22)
+        .frame(width: 500)
     }
 
     private var title: String {
@@ -256,8 +269,9 @@ struct UpdateView: View {
                     .textSelection(.enabled)
                     .padding(10)
             }
-            .frame(height: 160)
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            .frame(height: 170)
+            .background(Color.primary.opacity(0.04), in: Page.tile)
+            .overlay(Page.tile.strokeBorder(Color.primary.opacity(0.08)))
         case .downloading(let fraction):
             ProgressView(value: fraction)
         default:
@@ -275,9 +289,9 @@ struct UpdateView: View {
     private var leadingButtons: some View {
         switch updater.state {
         case .available:
-            Button("Skip This Version") { updater.skipThisVersion() }
+            Button("Skip This Version") { updater.skipThisVersion() }.glassButtonStyle()
         case .failed:
-            Button("Open Releases Page") { updater.openReleasePage() }
+            Button("Open Releases Page") { updater.openReleasePage() }.glassButtonStyle()
         default:
             EmptyView()
         }
@@ -287,22 +301,26 @@ struct UpdateView: View {
     private var trailingButtons: some View {
         switch updater.state {
         case .available:
-            Button("Later") { updater.later() }
+            Button("Later") { updater.later() }.glassButtonStyle()
             Button("Install Update") { updater.install() }
                 .keyboardShortcut(.defaultAction)
+                .glassButtonStyle(prominent: true)
         case .readyToInstall:
-            Button("Later") { updater.later() }
+            Button("Later") { updater.later() }.glassButtonStyle()
             Button("Restart to Update") { updater.restartToUpdate() }
                 .keyboardShortcut(.defaultAction)
+                .glassButtonStyle(prominent: true)
         case .failed:
-            Button("Close") { updater.later() }
+            Button("Close") { updater.later() }.glassButtonStyle()
             Button("Try Again") { updater.check(userInitiated: true) }
                 .keyboardShortcut(.defaultAction)
+                .glassButtonStyle(prominent: true)
         case .upToDate:
             Button("OK") { updater.later() }
                 .keyboardShortcut(.defaultAction)
+                .glassButtonStyle(prominent: true)
         default:
-            Button("Close") { updater.closeWindow() }
+            Button("Close") { updater.closeWindow() }.glassButtonStyle()
         }
     }
 }

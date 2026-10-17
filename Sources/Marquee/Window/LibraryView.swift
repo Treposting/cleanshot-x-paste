@@ -14,6 +14,13 @@ struct LibraryView: View {
         var id: String { rawValue }
     }
 
+    private var subtitle: String {
+        let shots = library.items.filter { !$0.isVideo }.count
+        let videos = library.items.count - shots
+        if library.items.isEmpty { return keepLibrary ? "Your recent captures" : "Off" }
+        return "\(shots) screenshot\(shots == 1 ? "" : "s") · \(videos) recording\(videos == 1 ? "" : "s")"
+    }
+
     private var items: [LibraryItem] {
         switch filter {
         case .all: return library.items
@@ -24,42 +31,33 @@ struct LibraryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Text("Library").font(.system(size: 20, weight: .bold))
-                Spacer()
+            PageHeader(title: "Library", subtitle: subtitle) {
                 Picker("Show", selection: $filter) {
                     ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 300)
-                Menu {
+                .frame(width: 280)
+                GlassMenuButton(label: "Library options") {
                     Toggle("Keep new captures in the Library", isOn: $keepLibrary)
                     Button("Show Library in Finder") { NSWorkspace.shared.open(library.directory) }
                     Divider()
                     Button("Clear Library…", role: .destructive) { confirmClear = true }
                         .disabled(library.items.isEmpty)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .accessibilityLabel("Library options")
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
 
             if items.isEmpty {
                 EmptyLibrary(keepLibrary: keepLibrary)
             } else {
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 16)], spacing: 18) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 18)], spacing: 20) {
                         ForEach(items) { item in
                             LibraryTile(item: item, revision: library.revision)
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, Page.gutter)
+                    .padding(.bottom, Page.gutter)
                 }
             }
         }
@@ -82,11 +80,11 @@ private struct LibraryTile: View {
                 LibraryThumbnail(item: item, revision: revision)
                     .frame(maxWidth: .infinity)
                     .aspectRatio(16 / 10, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(hovering ? 0.25 : 0.1))
-                    )
+                    .background(Color.primary.opacity(0.04))
+                    .clipShape(Page.tile)
+                    .overlay(Page.tile.strokeBorder(Color.primary.opacity(hovering ? 0.25 : 0.1)))
+                    .shadow(color: .black.opacity(hovering ? 0.14 : 0.06), radius: hovering ? 8 : 3, y: hovering ? 3 : 1)
+                    .animation(.easeOut(duration: 0.15), value: hovering)
                 if item.isVideo {
                     Label("Recording", systemImage: "play.fill")
                         .font(.system(size: 10, weight: .semibold))
@@ -188,25 +186,18 @@ private struct EmptyLibrary: View {
     let keepLibrary: Bool
 
     var body: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 40, weight: .light))
-                .foregroundStyle(.secondary)
-            Text(keepLibrary ? "Your screenshots and recordings show up here" : "The Library is turned off")
-                .font(.system(size: 15, weight: .semibold))
-            Text(keepLibrary
-                 ? "Take a capture and it's kept here, so you can copy, annotate or save it later."
-                 : "Turn on \u{201C}Keep new captures in the Library\u{201D} from the \u{2026} menu.")
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 360)
+        PageEmptyState(
+            symbol: keepLibrary ? "photo.on.rectangle.angled" : "tray",
+            title: keepLibrary ? "Your screenshots and recordings show up here" : "The Library is turned off",
+            message: keepLibrary
+                ? "Take a capture and it's kept here, so you can copy, annotate or save it later."
+                : "Turn on \u{201C}Keep new captures in the Library\u{201D} from the \u{2026} menu."
+        ) {
             if keepLibrary {
                 Button("Capture an Area") { AppModel.shared.perform(.captureArea) }
                     .glassButtonStyle(prominent: true)
                     .controlSize(.large)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(40)
     }
 }

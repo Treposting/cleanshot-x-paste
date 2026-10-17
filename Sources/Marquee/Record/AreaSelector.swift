@@ -123,10 +123,10 @@ private final class SelectionView: NSView {
     private func drawPill(_ text: String, at origin: NSPoint) {
         let size = (text as NSString).size(withAttributes: Self.attributes)
         let y = max(4, origin.y)
-        let rect = NSRect(x: origin.x, y: y, width: size.width + 16, height: size.height + 8)
+        let rect = NSRect(x: origin.x, y: y, width: size.width + 24, height: size.height + 10)
         NSColor.black.withAlphaComponent(0.7).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
-        (text as NSString).draw(at: NSPoint(x: rect.minX + 8, y: rect.minY + 4), withAttributes: Self.attributes)
+        NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
+        (text as NSString).draw(at: NSPoint(x: rect.minX + 12, y: rect.minY + 5), withAttributes: Self.attributes)
     }
 
     override func mouseDown(with event: NSEvent) {

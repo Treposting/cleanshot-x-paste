@@ -138,7 +138,7 @@ struct QuickAccessView: View {
                     .interpolation(.high)
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .overlay {
                         if capture.isVideo {
                             Image(systemName: "play.circle.fill")

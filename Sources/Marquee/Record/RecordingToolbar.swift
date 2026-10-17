@@ -218,32 +218,12 @@ struct RecordingToolbar: View {
 private let tape = Color(red: 1, green: 0.81, blue: 0.1)
 private let recordRed = Color(red: 1, green: 0.23, blue: 0.19)
 
-private struct ToolbarBackground: View {
-    var body: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .fill(.ultraThinMaterial)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.black.opacity(0.55))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.12))
-            )
-            .shadow(color: .black.opacity(0.35), radius: 16, y: 6)
-    }
-}
 
 private extension View {
     /// Dark-tinted Liquid Glass on macOS 26+ (controls stay legible over any content);
     /// a dark material panel on older systems.
-    @ViewBuilder
     func toolbarSurface() -> some View {
-        if #available(macOS 26.0, *) {
-            self.glassEffect(.regular.tint(Color.black.opacity(0.4)), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        } else {
-            self.background(ToolbarBackground())
-        }
+        hudSurface(cornerRadius: 18)
     }
 }
 

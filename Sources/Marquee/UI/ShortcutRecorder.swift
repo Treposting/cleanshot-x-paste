@@ -18,6 +18,7 @@ struct ShortcutRecorder: View {
                     .foregroundStyle(isRecording ? Color.accentColor : (combo == nil ? Color.secondary : Color.primary))
                     .frame(minWidth: 130)
             }
+            .glassButtonStyle(prominent: isRecording)
             .help("Click and press a new shortcut. Esc cancels, ⌫ clears.")
 
             Button {

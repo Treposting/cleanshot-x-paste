@@ -4,6 +4,9 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Changed
+- **The whole app follows the macOS 26/27 Liquid Glass design.** Every page of the Marquee window (Home, Library, Clipboard, Colors, Permissions, Settings) has the same large title, with its controls grouped on glass: capsule search, glass menus and buttons. Cards and tiles share one set of rounded corners. The update window, onboarding, shortcut recorder, Quick Access, annotation and recording toolbars match, and the on-screen hints are capsules. Older macOS versions get the closest material look.
+
 ## 0.5.12 — 2026-10-17
 
 ### Fixed

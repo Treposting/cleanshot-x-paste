@@ -8,14 +8,14 @@ struct ColorsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Text("Colors").font(.system(size: 20, weight: .bold))
-                Spacer()
+            PageHeader(title: "Colors",
+                       subtitle: picker.history.isEmpty ? "Pick any color on screen" : "\(picker.history.count) picked") {
                 Picker("Copy as", selection: $picker.format) {
                     ForEach(ColorFormat.allCases) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                .frame(maxWidth: 320)
+                .labelsHidden()
+                .frame(maxWidth: 300)
                 .help("Format used when you pick or click a color")
                 Button {
                     AppModel.shared.perform(.pickColor)
@@ -23,21 +23,20 @@ struct ColorsView: View {
                     Label("Pick Color", systemImage: "eyedropper")
                 }
                 .glassButtonStyle(prominent: true)
+                .controlSize(.large)
                 .keyboardShortcut("p", modifiers: .command)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
 
             if let latest = picker.history.first {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         LatestColorCard(color: latest)
+                            .pageCard(padding: 18)
                         if picker.history.count > 1 {
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack {
                                     Text("Recent")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(.secondary)
+                                        .pageSectionTitle()
                                     Spacer()
                                     Button("Clear…") { confirmClear = true }.buttonStyle(.link)
                                 }
@@ -49,24 +48,20 @@ struct ColorsView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, Page.gutter)
+                    .padding(.bottom, Page.gutter)
+                    .frame(maxWidth: Page.maxWidth, alignment: .leading)
                 }
             } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "eyedropper.halffull")
-                        .font(.system(size: 40, weight: .light))
-                        .foregroundStyle(.secondary)
-                    Text("Pick any color on your screen").font(.system(size: 15, weight: .semibold))
-                    Text("A magnifier follows the pointer. Click to pick; the color is copied as \(picker.format.rawValue).")
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 380)
+                PageEmptyState(
+                    symbol: "eyedropper.halffull",
+                    title: "Pick any color on your screen",
+                    message: "A magnifier follows the pointer. Click to pick; the color is copied as \(picker.format.rawValue)."
+                ) {
                     Button("Pick Color") { AppModel.shared.perform(.pickColor) }
                         .glassButtonStyle(prominent: true)
                         .controlSize(.large)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .confirmationDialog("Clear all picked colors?", isPresented: $confirmClear) {
@@ -80,10 +75,11 @@ private struct LatestColorCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            Page.tile
                 .fill(Color(nsColor: color.nsColor))
                 .frame(width: 140, height: 140)
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.12)))
+                .overlay(Page.tile.strokeBorder(Color.primary.opacity(0.12)))
+                .shadow(color: Color(nsColor: color.nsColor).opacity(0.35), radius: 10, y: 4)
                 .accessibilityLabel("Color \(color.hex)")
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(ColorFormat.allCases) { format in
@@ -108,7 +104,7 @@ private struct LatestColorCard: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
-                    .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Color.primary.opacity(0.05), in: Capsule())
                 }
             }
             .frame(maxWidth: 460)
@@ -125,11 +121,12 @@ private struct Swatch: View {
             ColorPickerController.shared.copy(color)
         } label: {
             VStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                Page.tile
                     .fill(Color(nsColor: color.nsColor))
                     .frame(height: 64)
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(hovering ? 0.3 : 0.1), lineWidth: hovering ? 2 : 1))
+                    .overlay(Page.tile.strokeBorder(Color.primary.opacity(hovering ? 0.3 : 0.1), lineWidth: hovering ? 2 : 1))
+                    .scaleEffect(hovering ? 1.03 : 1)
+                    .animation(.easeOut(duration: 0.15), value: hovering)
                 Text(color.hex)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.secondary)

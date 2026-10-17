@@ -6,14 +6,18 @@ import UniformTypeIdentifiers
 @MainActor
 struct SettingsView: View {
     var body: some View {
-        TabView {
-            CaptureSettings().tabItem { Label("Capture", systemImage: "camera.viewfinder") }
-            RecordingSettings().tabItem { Label("Recording", systemImage: "record.circle") }
-            MeasureSettings().tabItem { Label("Measure", systemImage: "ruler") }
-            ClipboardSettings().tabItem { Label("Clipboard", systemImage: "doc.on.clipboard") }
-            ShortcutsSettings().tabItem { Label("Shortcuts", systemImage: "keyboard") }
+        VStack(spacing: 0) {
+            PageHeader(title: "Settings", subtitle: "Captures, recording, Measure, clipboard and shortcuts")
+            TabView {
+                CaptureSettings().tabItem { Label("Capture", systemImage: "camera.viewfinder") }
+                RecordingSettings().tabItem { Label("Recording", systemImage: "record.circle") }
+                MeasureSettings().tabItem { Label("Measure", systemImage: "ruler") }
+                ClipboardSettings().tabItem { Label("Clipboard", systemImage: "doc.on.clipboard") }
+                ShortcutsSettings().tabItem { Label("Shortcuts", systemImage: "keyboard") }
+            }
+            .padding(.horizontal, Page.gutter - 8)
+            .padding(.bottom, 16)
         }
-        .padding(20)
         .frame(minWidth: 520, maxWidth: .infinity, minHeight: 480, maxHeight: .infinity)
     }
 }

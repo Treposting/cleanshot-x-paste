@@ -152,9 +152,9 @@ private final class PickerView: NSView {
             .foregroundColor: NSColor.white,
         ]
         let size = hint.size(withAttributes: attributes)
-        let pill = NSRect(x: bounds.midX - size.width / 2 - 10, y: bounds.maxY - 90, width: size.width + 20, height: size.height + 10)
+        let pill = NSRect(x: bounds.midX - size.width / 2 - 10, y: bounds.maxY - 90, width: size.width + 28, height: size.height + 10)
         NSColor.black.withAlphaComponent(0.72).setFill()
-        NSBezierPath(roundedRect: pill, xRadius: 8, yRadius: 8).fill()
-        hint.draw(at: NSPoint(x: pill.minX + 10, y: pill.minY + 5), withAttributes: attributes)
+        NSBezierPath(roundedRect: pill, xRadius: pill.height / 2, yRadius: pill.height / 2).fill()
+        hint.draw(at: NSPoint(x: pill.minX + 14, y: pill.minY + 5), withAttributes: attributes)
     }
 }

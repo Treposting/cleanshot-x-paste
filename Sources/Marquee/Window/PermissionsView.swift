@@ -185,7 +185,7 @@ private struct RepairCard: View {
             Image(systemName: "wrench.and.screwdriver")
                 .font(.system(size: 17, weight: .medium))
                 .frame(width: 36, height: 36)
-                .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(Color.accentColor.opacity(0.14), in: Page.tile)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Already allowed, but still shown as missing?")
                     .font(.system(size: 13, weight: .semibold))
@@ -204,9 +204,7 @@ private struct RepairCard: View {
             .controlSize(.regular)
             .fixedSize()
         }
-        .padding(14)
-        .background(Color.accentColor.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.accentColor.opacity(0.25)))
+        .pageCard(tint: .accentColor, padding: 16)
     }
 }
 
@@ -224,8 +222,8 @@ private struct PermissionRow: View {
         HStack(alignment: .center, spacing: 14) {
             Image(systemName: symbol)
                 .font(.system(size: 18, weight: .medium))
-                .frame(width: 36, height: 36)
-                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .frame(width: 38, height: 38)
+                .background(Color.primary.opacity(0.06), in: Page.tile)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Text(title).font(.system(size: 13, weight: .semibold))
@@ -248,8 +246,7 @@ private struct PermissionRow: View {
                     .accessibilityLabel("Allowed")
             }
         }
-        .padding(14)
-        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .pageCard(padding: 16)
         .accessibilityElement(children: .combine)
     }
 }

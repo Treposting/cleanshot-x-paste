@@ -23,33 +23,14 @@ struct ClipboardBrowserView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Text("Clipboard").font(.system(size: 20, weight: .bold))
-                HStack(spacing: 7) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                    TextField("Search", text: $query).textFieldStyle(.plain)
-                }
-                .padding(.horizontal, 12)
-                .frame(maxWidth: 260)
-                .frame(height: 30)
-                .background(Color.primary.opacity(0.07), in: Capsule())
-                Spacer()
-                Menu {
+            PageHeader(title: "Clipboard", subtitle: subtitle) {
+                GlassSearchField(text: $query, prompt: "Search clipboard")
+                GlassMenuButton(label: "Clipboard options") {
                     Toggle("Record clipboard history", isOn: Binding(get: { !paused }, set: { paused = !$0 }))
                     Divider()
                     Button("Clear History…", role: .destructive) { confirmClear = true }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .accessibilityLabel("Clipboard options")
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            .padding(.bottom, 10)
 
             Group {
                 if draft != nil {
@@ -58,7 +39,7 @@ struct ClipboardBrowserView: View {
                     ClipFilterBar(selection: $filter, store: store, draft: $draft)
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, Page.gutter)
             .padding(.bottom, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -66,22 +47,14 @@ struct ClipboardBrowserView: View {
                 Label("Clipboard history is paused. New copies aren't recorded.", systemImage: "pause.circle.fill")
                     .font(.system(size: 12))
                     .foregroundStyle(.orange)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, Page.gutter)
                     .padding(.bottom, 10)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if items.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "list.clipboard")
-                        .font(.system(size: 40, weight: .light))
-                        .foregroundStyle(.secondary)
-                    Text(emptyTitle)
-                        .font(.system(size: 15, weight: .semibold))
-                    Text("Press ⇧⌘V anywhere to open the quick clipboard panel.")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                PageEmptyState(symbol: "list.clipboard", title: emptyTitle,
+                               message: "Press ⇧⌘V anywhere to open the quick clipboard panel.")
             } else {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), spacing: 14)], spacing: 14) {
@@ -107,8 +80,8 @@ struct ClipboardBrowserView: View {
                             .help("Double-click to copy")
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, Page.gutter)
+                    .padding(.bottom, Page.gutter)
                 }
             }
         }
@@ -117,6 +90,12 @@ struct ClipboardBrowserView: View {
         } message: {
             Text("Pinned items and items in a category are kept.")
         }
+    }
+
+    private var subtitle: String {
+        let count = store.items.count
+        if paused { return "Paused" }
+        return count == 0 ? "Everything you copy" : "\(count) item\(count == 1 ? "" : "s")"
     }
 
     private var emptyTitle: String {

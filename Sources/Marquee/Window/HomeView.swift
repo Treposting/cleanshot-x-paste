@@ -80,9 +80,25 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                header
+            PageHeader(title: "Marquee",
+                       subtitle: "Capture, record, measure, and keep everything you copy.",
+                       icon: NSApp.applicationIconImage) {
+                Button {
+                    navigation.section = .settings
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14, weight: .medium))
+                        .frame(width: 32, height: 32)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .glassSurface(Circle(), interactive: true)
+                .help("Settings")
+                .accessibilityLabel("Settings")
+            }
+            .frame(maxWidth: Page.maxWidth, alignment: .leading)
 
+            VStack(alignment: .leading, spacing: 28) {
                 if !permissions.screenRecording {
                     PermissionBanner { navigation.section = .permissions }
                 }
@@ -109,31 +125,15 @@ struct HomeView: View {
 
                 recent
             }
-            .padding(28)
-            .frame(maxWidth: 980, alignment: .leading)
+            .padding(.horizontal, Page.gutter)
+            .padding(.bottom, Page.gutter)
+            .frame(maxWidth: Page.maxWidth, alignment: .leading)
         }
         .onReceive(NotificationCenter.default.publisher(for: ShortcutStore.didChange)) { _ in
             shortcutsVersion += 1
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             permissions.refresh()
-        }
-    }
-
-    private var header: some View {
-        HStack(spacing: 12) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .frame(width: 40, height: 40)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Marquee")
-                    .font(.system(size: 22, weight: .bold))
-                    .accessibilityAddTraits(.isHeader)
-                Text("Capture, record, measure, and keep everything you copy.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -146,7 +146,8 @@ struct HomeView: View {
                     SectionTitle("Earlier captures")
                     Spacer()
                     Button("Show All") { navigation.section = .library }
-                        .buttonStyle(.link)
+                        .glassButtonStyle()
+                        .controlSize(.small)
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -154,9 +155,8 @@ struct HomeView: View {
                             LibraryThumbnail(item: item, revision: library.revision)
                                 .frame(width: 150, height: 94)
                                 .background(Color.primary.opacity(0.04))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .strokeBorder(Color.primary.opacity(0.08)))
+                                .clipShape(Page.tile)
+                                .overlay(Page.tile.strokeBorder(Color.primary.opacity(0.08)))
                                 .onTapGesture(count: 2) { library.open(item) }
                                 .contextMenu { LibraryItemMenu(item: item) }
                                 .help(item.date.formatted(date: .abbreviated, time: .shortened))
@@ -176,8 +176,7 @@ private struct SectionTitle: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.secondary)
+            .pageSectionTitle()
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -186,7 +185,7 @@ private struct SectionTitle: View {
 @MainActor
 private struct AllInOneCard: View {
     let version: Int
-    private let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+    private let shape = Page.card
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -243,7 +242,7 @@ private struct LatestCaptureCard: View {
     let item: LibraryItem?
     let revision: Int
     let showLibrary: @MainActor () -> Void
-    private let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+    private let shape = Page.card
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -263,7 +262,7 @@ private struct LatestCaptureCard: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 96)
                     .background(Color.primary.opacity(0.04))
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .clipShape(Page.tile)
                     .onTapGesture(count: 2) { CaptureLibrary.shared.open(item) }
                     .contextMenu { LibraryItemMenu(item: item) }
                     .accessibilityLabel(item.isVideo ? "Latest recording" : "Latest screenshot")
@@ -345,7 +344,7 @@ private struct TileButtonStyle: ButtonStyle {
     @State private var hovering = false
 
     func makeBody(configuration: Configuration) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        let shape = Page.tile
         let fill = configuration.isPressed ? 0.11 : (hovering ? 0.07 : 0.035)
         configuration.label
             .contentShape(shape)
@@ -412,8 +411,6 @@ private struct PermissionBanner: View {
             Spacer()
             Button("Fix…", action: fix).glassButtonStyle(prominent: true)
         }
-        .padding(14)
-        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.orange.opacity(0.25)))
+        .pageCard(tint: .orange, padding: 16)
     }
 }

@@ -102,7 +102,7 @@ struct OnboardingView: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
-                    .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .background(Color.primary.opacity(0.035), in: Page.tile)
                 }
             }
             LaunchAtLoginToggle()
@@ -188,7 +188,7 @@ private struct FeatureRow: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 34, height: 34)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(Color.accentColor.opacity(0.12), in: Page.tile)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.system(size: 14, weight: .semibold))
                 Text(detail).font(.system(size: 13)).foregroundStyle(.secondary)

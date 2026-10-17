@@ -164,7 +164,7 @@ struct AnnotationEditorView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .glassSurface(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassSurface(Page.card)
     }
 
     private func canvas(scale: CGFloat) -> some View {
