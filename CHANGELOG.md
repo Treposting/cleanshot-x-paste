@@ -4,13 +4,15 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.11 — 2026-10-17
+
 ### Added
 - **Camera in recordings**: show yourself in a bubble inside the recording. Works with any camera connected to the Mac: built-in, USB webcams and capture cards, virtual cameras (OBS, Camo), iPhone through Continuity Camera and Desk View. The list updates as cameras are plugged in, and if the camera in use is unplugged, Marquee switches to another one. Choose the camera, shape (circle, rounded, square, portrait), size, corner, border (plain, or a yellow, blue, pink or rainbow glow) and mirroring from the new Camera menu on the recording toolbar or in Settings → Recording, and drag the bubble anywhere, even while recording.
 - **Save your voice separately**: optionally save the microphone as its own .m4a file next to the recording, for editing.
 - **Scrolling capture** (macOS 14+): select the part that scrolls, scroll down or press Auto-scroll, then Done for one long screenshot. Fixed headers and bottom bars appear once, and it tells you if you scroll too fast. Start it from All-in-One (Screenshot → Scrolling, or S), the menu bar, Home, or a shortcut.
 
 ### Changed
-- **All-in-One toolbar** is smaller and has no menus. **Screenshot** and **Record** run with the target you used last (area, full screen or window), and a selection always wins. The small icon at the end of each button shows that target; click it to switch the bar to Area / Full Screen / Window, with a back button (or Esc). Return and R use your last choice; F, W, ⇧F and ⇧W still pick directly. Copy, Copy Text, Pin and Color are icons with tooltips. The size readout is gone from the bar; the size still shows next to the selection.
+- **All-in-One toolbar** is smaller and has no menus. **Screenshot** and **Record** run with the target you used last (area, full screen or window), and a selection always wins. The small icon at the end of each button shows that target; click it to switch the bar to Area / Full Screen / Window (and Scrolling for screenshots), with a back button (or Esc). Return and R use your last choice; F, W, ⇧F and ⇧W still pick directly. Copy, Copy Text, Pin and Color are icons with tooltips. The size readout is gone from the bar; the size still shows next to the selection.
 
 ## 0.5.10 — 2026-10-17
 
