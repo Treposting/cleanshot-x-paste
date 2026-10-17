@@ -19,19 +19,19 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.5.10</string>
+	<string>0.5.11</string>
 	<key>CFBundleVersion</key>
-	<string>16</string>
+	<string>17</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Marquee shows your camera only while you're making a screen recording with the camera turned on.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>MIT License</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Marquee shows your camera only while you're making a screen recording with the camera turned on.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Marquee records your microphone only while you're making a screen recording with the microphone turned on.</string>
 </dict>
