@@ -67,11 +67,11 @@ The **Issue updates** workflow (`.github/workflows/issue-updates.yml`, logic in 
 
 ## Demo video
 
-`node video/render.mjs` renders `video/demo.html` to `site/assets/demo.mp4` (about 40 s). Then make the WebM and poster:
+`node video/render.mjs` renders `video/demo.html` to `site/assets/demo.mp4` (about 28 s). It needs Playwright with Chromium (`npm i playwright && npx playwright install chromium`, or point `NODE_PATH` at an install). When the app's UI changes, update the matching scene in `demo.html` too. Then make the WebM and poster:
 
 ```
 ffmpeg -y -i site/assets/demo.mp4 -c:v libvpx-vp9 -b:v 0 -crf 36 -row-mt 1 -an site/assets/demo.webm
-ffmpeg -y -ss 6.7 -i site/assets/demo.mp4 -frames:v 1 -q:v 4 site/assets/demo-poster.jpg
+ffmpeg -y -ss 12.9 -i site/assets/demo.mp4 -frames:v 1 -q:v 4 site/assets/demo-poster.jpg
 ```
 
 `node video/render.mjs --stills 3,7.2` writes single frames to `video/stills/` (git-ignored) for checking.

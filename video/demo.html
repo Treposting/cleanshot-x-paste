@@ -7,19 +7,25 @@
   A time-driven scene for the landing-page demo video. Nothing animates on its own:
   render(t) sets every element for time t (seconds), and video/render.mjs captures
   each frame. Open this file in a browser and add #play to watch it in real time.
+
+  Scenes: title · All-in-One (remembered target, inline target picker) · scrolling
+  capture · recording with the camera bubble · Measure with a guide · color picker ·
+  clipboard panel with categories · end card. Keep it in step with the app's UI.
 -->
 <style>
   :root {
     --yellow: #FFCF1A;
     --ink: #1D1D1F;
     --rec: #FF3B30;
-    --measure: #FF2D78;
+    --guide: #FF4588;
+    --accent: #3478F6;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; background: #000; }
   body { font-family: "Inter", -apple-system, system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
   .abs { position: absolute; }
   #stage { position: relative; width: 1280px; height: 800px; overflow: hidden; }
+  svg { display: block; }
 
   /* Desktop */
   #wall {
@@ -35,7 +41,6 @@
     background: rgba(255,255,255,.42); backdrop-filter: blur(24px) saturate(1.6);
     display: flex; align-items: center; padding: 0 14px; gap: 18px; font-size: 13px; font-weight: 500;
   }
-  #menubar .apple { font-size: 15px; }
   #menubar b { font-weight: 700; }
   #menubar .right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
   #mbicon { width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center; }
@@ -44,18 +49,19 @@
 
   /* App window */
   #win {
-    left: 190px; top: 130px; width: 900px; height: 580px; border-radius: 14px; overflow: hidden;
+    left: 190px; top: 130px; width: 900px; height: 580px; border-radius: 16px; overflow: hidden; z-index: 0;
     background: #FBFBFA; box-shadow: 0 30px 80px rgba(80,40,0,.28), 0 0 0 1px rgba(0,0,0,.08);
   }
-  #win .bar { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid #ECEAE6; background: #F4F3F0; }
+  #win .bar { position: relative; z-index: 2; height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid #ECEAE6; background: #F4F3F0; }
   #win .bar i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
   #win .bar span { margin-left: 14px; font-size: 13px; font-weight: 600; color: #6E6B66; }
-  #win .side { left: 0; top: 40px; bottom: 0; width: 200px; background: #F1EFEB; padding: 18px 14px; }
+  #win .side { z-index: 2; left: 0; top: 40px; bottom: 0; width: 200px; background: #F1EFEB; padding: 18px 14px; }
   #win .side div { height: 10px; border-radius: 5px; background: #DDD9D2; margin: 0 0 16px; }
   #win .side div.on { background: var(--ink); width: 70%; }
-  #win h2 { position: absolute; left: 230px; top: 62px; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  #doc { left: 0; top: 0; width: 900px; height: 1400px; }
+  #doc h2 { position: absolute; left: 230px; top: 62px; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
   #hero {
-    left: 230px; top: 110px; width: 620px; height: 220px; border-radius: 14px;
+    left: 230px; top: 110px; width: 620px; height: 220px; border-radius: 16px;
     background: linear-gradient(135deg, #1D1D1F 0%, #3A2F1A 55%, #8A6A12 100%); color: #fff; padding: 26px 28px;
   }
   #hero .k { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--yellow); font-weight: 700; }
@@ -63,102 +69,148 @@
   #hero .chart { position: absolute; right: 28px; bottom: 26px; display: flex; align-items: flex-end; gap: 10px; }
   #hero .chart b { width: 22px; border-radius: 5px 5px 2px 2px; background: var(--yellow); display: block; }
   #ship {
-    left: 230px; top: 350px; width: 140px; height: 44px; border-radius: 10px; background: var(--yellow);
+    left: 230px; top: 350px; width: 140px; height: 44px; border-radius: 12px; background: var(--yellow);
     font-weight: 700; font-size: 15px; display: grid; place-items: center;
   }
   .sw { top: 354px; width: 36px; height: 36px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
   .line { left: 230px; height: 10px; border-radius: 5px; background: #E7E4DE; }
+  .block { left: 230px; width: 620px; border-radius: 16px; background: #F1EFEA; }
+  .block b { position: absolute; left: 22px; height: 10px; border-radius: 5px; background: #DCD8D0; }
+
+  .glass {
+    background: rgba(255,255,255,.74); backdrop-filter: blur(22px) saturate(1.7);
+    border: 1px solid rgba(255,255,255,.7); box-shadow: 0 14px 40px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.8);
+  }
+  .hud {
+    background: rgba(30,30,32,.74); backdrop-filter: blur(22px) saturate(1.5); color: #fff;
+    border: 1px solid rgba(255,255,255,.12); box-shadow: 0 14px 40px rgba(0,0,0,.3);
+  }
 
   /* All-in-One */
   #dim { left: 0; top: 0; width: 0; height: 0; box-shadow: 0 0 0 4000px rgba(0,0,0,.38); }
   #sel { border: 1.5px solid var(--yellow); }
   #sel .h { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: #fff; border: 1.5px solid var(--yellow); }
   .pill {
-    background: rgba(0,0,0,.72); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 6px;
+    background: rgba(0,0,0,.72); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
-  .glass {
-    background: rgba(255,255,255,.74); backdrop-filter: blur(22px) saturate(1.7);
-    border: 1px solid rgba(255,255,255,.7); box-shadow: 0 14px 40px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.8);
-  }
-  #toolbar { border-radius: 999px; padding: 6px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-  .act { display: flex; align-items: center; gap: 7px; height: 38px; padding: 0 10px 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 650; }
-  .act svg { width: 16px; height: 16px; }
-  .act kbd { font: 650 10px "Inter"; padding: 2px 5px; border-radius: 5px; background: rgba(0,0,0,.07); opacity: .8; }
-  .act.pri { background: var(--yellow); }
-  .act.pri kbd { background: rgba(0,0,0,.12); }
-  .chev { width: 20px; height: 38px; display: grid; place-items: center; border-radius: 999px; }
-  .chev svg { width: 10px; height: 10px; }
-  .sep { width: 1px; height: 22px; background: rgba(0,0,0,.14); margin: 0 6px; }
-  .dimtxt { color: #6E6B66; font-size: 12px; font-weight: 600; width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
-  .circ { width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,.06); display: grid; place-items: center; }
+  #toolbar { border-radius: 999px; padding: 5px; display: grid; }
+  .tbrow { grid-area: 1 / 1; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .mode { display: flex; align-items: center; height: 34px; border-radius: 999px; overflow: hidden; font-size: 12.5px; font-weight: 650; }
+  .mode .mm { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 8px 0 12px; }
+  .mode .tgt { display: grid; place-items: center; width: 30px; height: 34px; border-left: 1px solid rgba(0,0,0,.18); }
+  .mode svg { width: 15px; height: 15px; }
+  .mode.shot { background: var(--yellow); }
+  .mode.recm { background: rgba(255,59,48,.14); color: var(--rec); }
+  .mode.recm .tgt { border-left-color: rgba(255,59,48,.3); }
+  .mode .tgt.hot { background: rgba(0,0,0,.1); }
+  .ic { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; }
+  .ic svg { width: 15px; height: 15px; }
+  .circ { width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,.06); display: grid; place-items: center; color: #6E6B66; }
   .circ svg { width: 13px; height: 13px; }
-  #menu { border-radius: 12px; padding: 6px; width: 230px; font-size: 13px; font-weight: 500; }
-  #menu div { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px; }
-  #menu div span { margin-left: auto; color: #8A877F; font-size: 12px; }
-  #menu div.hl { background: #3478F6; color: #fff; }
-  #menu div.hl span { color: rgba(255,255,255,.8); }
-  #menu svg { width: 15px; height: 15px; }
+  .plabel { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 650; padding: 0 6px; }
+  .plabel svg { width: 14px; height: 14px; }
+  .tchip { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 999px; background: rgba(0,0,0,.05); font-size: 12.5px; font-weight: 650; }
+  .tchip svg { width: 14px; height: 14px; }
+  .tchip.cur { background: rgba(52,120,246,.18); box-shadow: inset 0 0 0 1px rgba(52,120,246,.55); }
+  .tchip.press { background: rgba(52,120,246,.32); }
 
   #flash { inset: 0; background: #fff; }
-  #thumb {
-    left: 24px; bottom: 24px; width: 230px; height: 104px; border-radius: 12px; overflow: hidden;
+  .thumb {
+    left: 24px; bottom: 24px; border-radius: 14px; overflow: hidden;
     border: 3px solid #fff; box-shadow: 0 16px 40px rgba(0,0,0,.3);
   }
+  #thumb { width: 230px; height: 104px; }
   #thumb .img { position: absolute; inset: 0; background: linear-gradient(135deg, #1D1D1F 0%, #3A2F1A 55%, #8A6A12 100%); }
   #thumb .img b { position: absolute; left: 14px; top: 16px; color: #fff; font-size: 15px; font-weight: 800; width: 120px; line-height: 1.05; }
   #thumb .btns { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(0,0,0,.35); }
-  #thumb .btns span { background: rgba(255,255,255,.92); border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 650; }
+  #thumb .btns span { background: rgba(255,255,255,.92); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 650; }
+  #tall { width: 120px; height: 236px; background: #FBFBFA; }
+  #tall .h { position: absolute; left: 10px; right: 10px; top: 10px; height: 46px; border-radius: 8px; background: linear-gradient(135deg, #1D1D1F, #8A6A12); }
+  #tall i { position: absolute; left: 10px; height: 5px; border-radius: 3px; background: #E2DED7; }
+  #tall .tag { position: absolute; right: 6px; bottom: 6px; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; background: var(--ink); color: var(--yellow); }
   #toast { left: 50%; top: 52px; transform: translateX(-50%); border-radius: 999px; padding: 9px 16px; font-size: 13.5px; font-weight: 650; display: flex; gap: 8px; align-items: center; }
   #toast i { width: 18px; height: 18px; border-radius: 50%; background: #2BB673; display: grid; place-items: center; color: #fff; font-style: normal; font-size: 11px; }
 
+  /* Scrolling capture */
+  #outline { border: 2px dashed var(--yellow); border-radius: 4px; }
+  #scrollbar { border-radius: 999px; padding: 8px 8px 8px 16px; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+  #scrollbar .msg { font-size: 12.5px; font-weight: 650; width: 200px; }
+  #scrollbar .msg span { display: block; font-size: 11px; font-weight: 500; color: #6E6B66; font-variant-numeric: tabular-nums; }
+  .gbtn { height: 30px; padding: 0 13px; border-radius: 999px; display: grid; place-items: center; font-size: 12.5px; font-weight: 650; background: rgba(0,0,0,.07); }
+  .gbtn.pri { background: var(--accent); color: #fff; }
+  .gbtn.press { filter: brightness(.85); }
+
   /* Recording */
-  #recbar { border-radius: 999px; padding: 6px; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-  #recbar .opt { display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 999px; background: rgba(0,0,0,.05); }
+  #recbar { border-radius: 18px; padding: 6px; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  #recbar .opt { display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 11px; border-radius: 9px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.88); }
+  #recbar .opt.on { background: rgba(255,207,26,.16); box-shadow: inset 0 0 0 1px rgba(255,207,26,.35); color: var(--yellow); }
   #recbar .opt svg { width: 15px; height: 15px; }
+  #recbar .x { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.08); display: grid; place-items: center; }
+  #recbar .x svg { width: 12px; height: 12px; }
+  #recbar .div { width: 1px; height: 22px; background: rgba(255,255,255,.14); }
   #meter { display: flex; gap: 2px; align-items: flex-end; height: 14px; }
-  #meter b { width: 3px; border-radius: 2px; background: #2BB673; display: block; }
-  #recbtn { height: 36px; padding: 0 16px 0 12px; border-radius: 999px; background: var(--rec); color: #fff; display: flex; align-items: center; gap: 8px; }
-  #recbtn i { width: 12px; height: 12px; border-radius: 50%; background: #fff; display: inline-block; }
-  .tog { width: 30px; height: 18px; border-radius: 999px; background: #34C759; position: relative; }
-  .tog::after { content: ""; position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; }
-  #count { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center; font-size: 64px; font-weight: 800; }
+  #meter b { width: 3px; border-radius: 1px; background: var(--yellow); display: block; }
+  #recbtn { height: 34px; padding: 0 14px 0 12px; border-radius: 9px; background: var(--rec); color: #fff; display: flex; align-items: center; gap: 8px; font-weight: 650; }
+  #recbtn i { width: 9px; height: 9px; border-radius: 50%; background: #fff; display: inline-block; }
+  #count { width: 140px; height: 140px; border-radius: 50%; display: grid; place-items: center; font-size: 60px; font-weight: 800; }
   #recframe { border: 2px solid var(--rec); border-radius: 2px; }
+  #cam { width: 132px; height: 132px; border-radius: 50%; overflow: hidden;
+    background: radial-gradient(circle at 50% 38%, #F2C9A5 0 21%, transparent 22%),
+                radial-gradient(ellipse 55% 40% at 50% 98%, #3E7BFA 0 98%, transparent 100%),
+                linear-gradient(160deg, #CFE3F7, #9FB7D6);
+    box-shadow: 0 0 0 3.5px var(--yellow), 0 0 24px 6px rgba(255,207,26,.75); }
+  #cam::after { content: ""; position: absolute; left: 50%; top: 22%; width: 40px; height: 18px; transform: translateX(-50%); border-radius: 20px 20px 6px 6px; background: #3A2A1E; }
 
   /* Measure */
-  .mline { background: var(--measure); }
-  .mlabel { background: var(--measure); color: #fff; font-size: 11.5px; font-weight: 700; padding: 3px 7px; border-radius: 5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  #snap { border: 1.5px solid var(--measure); background: rgba(255,45,120,.08); }
+  .mline { background: var(--yellow); box-shadow: 0 0 0 .6px rgba(29,29,31,.7); }
+  .mlabel { background: var(--yellow); color: var(--ink); font-size: 11.5px; font-weight: 700; padding: 3px 7px; border-radius: 5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #snap { border: 1px solid var(--yellow); background: rgba(255,207,26,.18); box-shadow: 0 0 0 .6px rgba(29,29,31,.6); }
+  #guide { width: 2px; top: 28px; bottom: 0; background: var(--guide); box-shadow: 0 0 0 .6px rgba(29,29,31,.5); }
+  #guidelabel { background: var(--guide); color: #fff; font-size: 11.5px; font-weight: 700; padding: 3px 7px; border-radius: 5px; white-space: nowrap; }
 
   /* Color */
-  #loupe { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow: hidden;
-    background-image: linear-gradient(rgba(0,0,0,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.08) 1px, transparent 1px);
-    background-size: 12px 12px; }
+  #loupe { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,.35); overflow: hidden; }
   #loupe .c { position: absolute; left: 54px; top: 54px; width: 12px; height: 12px; outline: 2px solid #fff; box-shadow: 0 0 0 3px rgba(0,0,0,.4); }
-  #chip { border-radius: 12px; padding: 8px 12px 8px 8px; display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 14px; }
-  #chip b { width: 28px; height: 28px; border-radius: 7px; background: var(--yellow); display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  #chip { border-radius: 14px; padding: 8px 12px 8px 8px; display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 14px; }
+  #chip b { width: 28px; height: 28px; border-radius: 8px; background: var(--yellow); display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
   #chip span { color: #6E6B66; font-weight: 500; font-size: 12.5px; }
 
-  /* Clipboard */
-  #clip { left: 40px; right: 40px; height: 250px; border-radius: 22px; padding: 18px; }
-  #clip .search { height: 34px; border-radius: 10px; background: rgba(0,0,0,.06); display: flex; align-items: center; padding: 0 12px; color: #8A877F; font-size: 13px; width: 300px; }
-  #clip .row { display: flex; gap: 14px; margin-top: 16px; }
-  .card { width: 180px; height: 160px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.08); flex: none; position: relative; }
-  .card header { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: #fff; font-size: 12px; font-weight: 700; }
-  .card header i { font-style: normal; width: 20px; height: 20px; border-radius: 5px; background: rgba(255,255,255,.28); display: grid; place-items: center; font-size: 11px; }
-  .card .body { padding: 10px; font-size: 12.5px; line-height: 1.4; color: #3A3835; }
-  .card.on { outline: 3px solid #3478F6; outline-offset: 2px; }
+  /* Clipboard panel: attached to the bottom edge, only the top corners rounded */
+  #clip { left: 0; right: 0; height: 296px; border-radius: 26px 26px 0 0; padding: 16px 20px; border-bottom: none; }
+  #clip .head { display: flex; align-items: center; gap: 10px; }
+  #clip .search { height: 30px; width: 200px; border-radius: 999px; background: rgba(0,0,0,.07); display: flex; align-items: center; gap: 7px; padding: 0 12px; color: #8A877F; font-size: 13px; }
+  .fchip { height: 26px; padding: 0 11px; border-radius: 999px; background: rgba(0,0,0,.07); display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 550; }
+  .fchip.on { background: var(--accent); color: #fff; font-weight: 650; }
+  .fchip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .fplus { width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,.07); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+  .vdiv { width: 1px; height: 16px; background: rgba(0,0,0,.15); margin: 0 3px; }
+  #clip .hint { margin-left: auto; font-size: 11px; color: #6E6B66; }
+  #clip .row { display: flex; gap: 14px; margin-top: 14px; }
+  .card { width: 186px; height: 210px; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.1), 0 0 0 1px rgba(0,0,0,.06); flex: none; position: relative; display: flex; flex-direction: column; }
+  .card header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: #fff; }
+  .card header b { display: block; font-size: 12.5px; font-weight: 700; }
+  .card header small { display: block; font-size: 9.5px; opacity: .88; }
+  .card header .app { width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,.3); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+  .card .body { padding: 9px 10px; font-size: 12px; line-height: 1.4; color: #3A3835; flex: 1; }
+  .card footer { padding: 0 10px 8px; font-size: 9.5px; color: #8A877F; display: flex; align-items: center; gap: 6px; }
+  .card footer .cat { display: flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 999px; background: rgba(62,123,250,.16); color: var(--ink); }
+  .card footer .cat i { width: 6px; height: 6px; border-radius: 50%; background: #3E7BFA; display: inline-block; }
+  .card footer kbd { margin-left: auto; font: 500 9.5px "Inter"; }
+  .card.on { box-shadow: 0 0 0 2.5px var(--accent), 0 2px 10px rgba(0,0,0,.1); }
+  .card.press { transform: scale(.97); }
 
   /* Overlays */
-  #keycap { left: 50%; bottom: 120px; transform: translateX(-50%); display: flex; gap: 8px; }
+  #keycap { left: 50%; bottom: 120px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; }
   #keycap kbd { min-width: 54px; height: 54px; padding: 0 14px; border-radius: 12px; background: rgba(29,29,31,.86); color: #fff;
     font: 700 24px "Inter"; display: grid; place-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.25), inset 0 -3px 0 rgba(0,0,0,.4); }
-  #caption { left: 40px; top: 44px; font-size: 30px; font-weight: 800; letter-spacing: -.025em; color: var(--ink); max-width: 560px; line-height: 1.05; }
+  #keycap span { font-weight: 700; font-size: 18px; color: rgba(29,29,31,.8); margin: 0 4px; }
+  #caption { left: 40px; top: 44px; font-size: 30px; font-weight: 800; letter-spacing: -.025em; color: var(--ink); max-width: 600px; line-height: 1.05; }
   #caption small { display: block; font-size: 15px; font-weight: 600; letter-spacing: 0; color: rgba(29,29,31,.72); margin-top: 6px; }
-  #cursor { width: 22px; height: 30px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+  #cursor { width: 22px; height: 30px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); z-index: 50; }
 
   /* Title and end cards */
-  .card-full { inset: 0; background: var(--yellow); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .card-full { inset: 0; background: var(--yellow); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 60; }
   .card-full .logo { width: 128px; height: 128px; }
   .card-full h1 { font-size: 84px; font-weight: 800; letter-spacing: -.04em; margin: 22px 0 6px; }
   .card-full p { font-size: 26px; font-weight: 650; margin: 0; letter-spacing: -.01em; }
@@ -182,23 +234,34 @@
   <div id="win" class="abs">
     <div class="bar"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i><span>Launch plan</span></div>
     <div class="side abs"><div class="on"></div><div style="width:80%"></div><div style="width:60%"></div><div style="width:72%"></div><div style="width:55%"></div></div>
-    <h2>Launch plan</h2>
-    <div id="hero" class="abs">
-      <div class="k">Q4 · Release</div>
-      <div class="t">Ship Marquee<br>to everyone</div>
-      <div class="chart"><b style="height:34px"></b><b style="height:58px"></b><b style="height:46px"></b><b style="height:82px"></b><b style="height:110px"></b></div>
+    <div id="doc" class="abs">
+      <h2>Launch plan</h2>
+      <div id="hero" class="abs">
+        <div class="k">Q4 · Release</div>
+        <div class="t">Ship Marquee<br>to everyone</div>
+        <div class="chart"><b style="height:34px"></b><b style="height:58px"></b><b style="height:46px"></b><b style="height:82px"></b><b style="height:110px"></b></div>
+      </div>
+      <div id="ship" class="abs">Ship it</div>
+      <div class="sw abs" style="left:400px;background:#FFCF1A"></div>
+      <div class="sw abs" style="left:448px;background:#1D1D1F"></div>
+      <div class="sw abs" style="left:496px;background:#FF6B4A"></div>
+      <div class="sw abs" style="left:544px;background:#3E7BFA"></div>
+      <div class="sw abs" style="left:592px;background:#2BB673"></div>
+      <div class="line abs" style="top:430px;width:560px"></div>
+      <div class="line abs" style="top:452px;width:500px"></div>
+      <div class="line abs" style="top:474px;width:420px"></div>
+      <div class="line abs" style="top:510px;width:540px"></div>
+      <div class="line abs" style="top:532px;width:380px"></div>
+      <div class="block abs" style="top:574px;height:150px"><b style="top:22px;width:200px"></b><b style="top:44px;width:420px"></b><b style="top:66px;width:360px"></b><b style="top:88px;width:400px"></b></div>
+      <div class="line abs" style="top:750px;width:560px"></div>
+      <div class="line abs" style="top:772px;width:470px"></div>
+      <div class="line abs" style="top:794px;width:520px"></div>
+      <div class="block abs" style="top:836px;height:180px;background:linear-gradient(135deg,#FFE9A8,#FFB38A)"><b style="top:24px;width:240px;background:rgba(29,29,31,.25)"></b><b style="top:48px;width:380px;background:rgba(29,29,31,.15)"></b></div>
+      <div class="line abs" style="top:1040px;width:540px"></div>
+      <div class="line abs" style="top:1062px;width:430px"></div>
+      <div class="line abs" style="top:1084px;width:500px"></div>
+      <div class="line abs" style="top:1106px;width:360px"></div>
     </div>
-    <div id="ship" class="abs">Ship it</div>
-    <div class="sw abs" style="left:400px;background:#FFCF1A"></div>
-    <div class="sw abs" style="left:448px;background:#1D1D1F"></div>
-    <div class="sw abs" style="left:496px;background:#FF6B4A"></div>
-    <div class="sw abs" style="left:544px;background:#3E7BFA"></div>
-    <div class="sw abs" style="left:592px;background:#2BB673"></div>
-    <div class="line abs" style="top:430px;width:560px"></div>
-    <div class="line abs" style="top:452px;width:500px"></div>
-    <div class="line abs" style="top:474px;width:420px"></div>
-    <div class="line abs" style="top:510px;width:540px"></div>
-    <div class="line abs" style="top:532px;width:380px"></div>
   </div>
 
   <!-- All-in-One -->
@@ -211,37 +274,52 @@
   </div>
   <div id="selsize" class="abs pill"></div>
   <div id="toolbar" class="abs glass">
-    <div class="act pri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/><circle cx="12" cy="12" r="3.2"/></svg>Screenshot<kbd>↩</kbd></div>
-    <div class="chev" id="chev"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3.5l3 3 3-3"/></svg></div>
-    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="#FF3B30" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5" fill="#FF3B30"/></svg>Record<kbd>R</kbd></div>
-    <div class="chev"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3.5l3 3 3-3"/></svg></div>
-    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/></svg>Copy<kbd>⌘C</kbd></div>
-    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 10h8M8 14h5"/></svg>Copy Text<kbd>T</kbd></div>
-    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></svg>Pin<kbd>P</kbd></div>
-    <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 6l4 4M5 19l1-4 9-9 3 3-9 9z"/></svg>Color<kbd>C</kbd></div>
-    <div class="sep"></div>
-    <div class="dimtxt" id="tbsize">Full screen</div>
-    <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></div>
-    <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
-  </div>
-  <div id="menu" class="abs glass">
-    <div id="mi1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"><rect x="4" y="5" width="16" height="14" rx="1"/></svg>Selected Area<span>↩</span></div>
-    <div id="mi2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 20h6"/></svg>Full Screen<span>F</span></div>
-    <div id="mi3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>Window…<span>W</span></div>
+    <div class="tbrow" id="tbMain">
+      <div class="mode shot"><span class="mm"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 4h6l1.5 2H20a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3.5z"/><circle cx="12" cy="12.5" r="3.6" fill="#FFCF1A"/></svg>Screenshot</span><span class="tgt" id="shotTgt"><svg id="shotTgtIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 20h6"/></svg></span></div>
+      <div class="mode recm"><span class="mm"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#FF3B30"/><circle cx="12" cy="12" r="3.5" fill="#fff"/></svg>Record</span><span class="tgt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 20h6"/></svg></span></div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 10h8M8 14h5"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></svg></div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 6l4 4M5 19l1-4 9-9 3 3-9 9z"/></svg></div>
+      <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></div>
+      <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+    </div>
+    <div class="tbrow" id="tbPick">
+      <div class="circ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+      <span class="plabel"><svg viewBox="0 0 24 24" fill="#E0A800"><path d="M9 4h6l1.5 2H20a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3.5z"/></svg>Screenshot</span>
+      <div class="tchip" id="pArea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>Area</div>
+      <div class="tchip cur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 20h6"/></svg>Full Screen</div>
+      <div class="tchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>Window</div>
+      <div class="tchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10v18H7zM10 7h4M10 11h4M10 15h4"/></svg>Scrolling</div>
+    </div>
   </div>
 
   <div id="flash" class="abs"></div>
-  <div id="thumb" class="abs"><div class="img"><b>Ship Marquee to everyone</b></div><div class="btns"><span>Copy</span><span>Save</span><span>Annotate</span></div></div>
+  <div id="thumb" class="abs thumb"><div class="img"><b>Ship Marquee to everyone</b></div><div class="btns"><span>Copy</span><span>Save</span><span>Annotate</span></div></div>
+  <div id="tall" class="abs thumb"><div class="h"></div><span class="tag">2,180 pt</span></div>
   <div id="toast" class="abs glass"><i>✓</i><span id="toasttxt">Screenshot copied</span></div>
+
+  <!-- Scrolling capture -->
+  <div id="outline" class="abs"></div>
+  <div id="scrollbar" class="abs glass">
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h10v18H7zM10 7h4M10 11h4M10 15h4"/></svg>
+    <div class="msg">Scroll down to capture<span id="scrollpt">0 pt captured</span></div>
+    <div class="gbtn">Auto-scroll</div><div class="gbtn">Cancel</div><div class="gbtn pri" id="done">Done</div>
+  </div>
 
   <!-- Recording -->
   <div id="recframe" class="abs"></div>
-  <div id="recbar" class="abs glass">
-    <div class="opt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>MacBook Pro Microphone<div id="meter"></div></div>
-    <div class="opt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10v4h4l5 4V6L8 10zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>Desktop audio<span class="tog"></span></div>
+  <div id="cam" class="abs"></div>
+  <div id="recbar" class="abs hud">
+    <div class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+    <div class="div"></div>
+    <div class="opt on"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>MacBook Pro Microphone<div id="meter"></div></div>
+    <div class="opt on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2"/></svg>Desktop audio</div>
+    <div class="opt on" id="camchip"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>Camera</div>
+    <div class="div"></div>
     <div id="recbtn"><i></i>Record</div>
   </div>
-  <div id="count" class="abs glass"></div>
+  <div id="count" class="abs hud"></div>
 
   <!-- Measure -->
   <div id="mh" class="abs mline" style="height:1px"></div>
@@ -250,6 +328,8 @@
   <div id="mlv" class="abs mlabel"></div>
   <div id="snap" class="abs"></div>
   <div id="snaplabel" class="abs mlabel"></div>
+  <div id="guide" class="abs"></div>
+  <div id="guidelabel" class="abs">x 230</div>
 
   <!-- Color -->
   <div id="loupe" class="abs"><div class="c"></div></div>
@@ -257,14 +337,20 @@
 
   <!-- Clipboard -->
   <div id="clip" class="abs glass">
-    <div class="search">⌕&nbsp; Search clipboard history</div>
+    <div class="head">
+      <div class="search"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Search</div>
+      <div class="fchip on">All</div><div class="fchip">Text</div><div class="fchip">Links</div><div class="fchip">Images</div><div class="fchip">Files</div><div class="fchip">Pinned</div>
+      <div class="vdiv"></div>
+      <div class="fchip"><i style="background:#3E7BFA"></i>Work</div><div class="fchip"><i style="background:#FF9500"></i>Ideas</div><div class="fplus">+</div>
+      <div class="hint">6 items · click or ↩ to paste · ⌘1–9 quick paste</div>
+    </div>
     <div class="row">
-      <div class="card" id="c1"><header style="background:#3E7BFA">Text<i>1</i></header><div class="body">Ship Marquee to everyone this week. Notes from the review are in the doc.</div></div>
-      <div class="card" id="c2"><header style="background:#1F9E8F">Link<i>2</i></header><div class="body">github.com/<br>Treposting/marquee</div></div>
-      <div class="card" id="c3"><header style="background:#8A6A12">Image<i>3</i></header><div class="body" style="padding:0;height:126px;background:linear-gradient(135deg,#1D1D1F,#3A2F1A 55%,#8A6A12)"></div></div>
-      <div class="card" id="c4"><header style="background:#E5484D">Color<i>4</i></header><div class="body"><div style="height:60px;border-radius:8px;background:#FFCF1A"></div><div style="margin-top:8px;font-weight:700">#FFCF1A</div></div></div>
-      <div class="card" id="c5"><header style="background:#6E6B66">File<i>5</i></header><div class="body">launch-plan.pdf<br><span style="color:#8A877F">2.4 MB</span></div></div>
-      <div class="card" id="c6"><header style="background:#3E7BFA">Text<i>6</i></header><div class="body">hello@marquee.app</div></div>
+      <div class="card" id="c1"><header style="background:linear-gradient(#E3B90E,#D2A700)"><div><b>Text</b><small>Just now</small></div><span class="app"></span></header><div class="body">Ship Marquee to everyone this week. Notes from the review are in the doc.</div><footer>72 characters<kbd>⌘1</kbd></footer></div>
+      <div class="card" id="c2"><header style="background:linear-gradient(#1A9BF0,#0A84E0)"><div><b>Link</b><small>2 min ago</small></div><span class="app"></span></header><div class="body" style="padding:8px"><div style="height:62px;border-radius:7px;background:linear-gradient(135deg,#1D1D1F,#3A2F1A 55%,#FFCF1A)"></div><div style="font-weight:700;margin-top:6px;font-size:11.5px">Treposting/marquee</div><div style="color:#3478F6;font-size:10.5px">github.com/Treposting/…</div></div><footer><span class="cat"><i></i>Work</span>github.com<kbd>⌘2</kbd></footer></div>
+      <div class="card" id="c3"><header style="background:linear-gradient(#8A6A12,#6E550E)"><div><b>Image</b><small>5 min ago</small></div><span class="app"></span></header><div class="body" style="padding:8px"><div style="height:118px;border-radius:7px;background:linear-gradient(135deg,#1D1D1F,#3A2F1A 55%,#8A6A12)"></div></div><footer>Marquee<kbd>⌘3</kbd></footer></div>
+      <div class="card" id="c4"><header style="background:linear-gradient(#E5484D,#CF3A3F)"><div><b>Color</b><small>8 min ago</small></div><span class="app"></span></header><div class="body"><div style="display:flex;align-items:center;gap:6px;font-weight:600"><span style="width:12px;height:12px;border-radius:3px;background:#FFCF1A;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)"></span>#FFCF1A</div></div><footer>rgb(255, 207, 26)<kbd>⌘4</kbd></footer></div>
+      <div class="card" id="c5"><header style="background:linear-gradient(#5E5CE6,#4B49D0)"><div><b>Image</b><small>1 hr ago</small></div><span class="app"></span></header><div class="body" style="padding:8px"><div style="height:94px;border-radius:7px;background:linear-gradient(160deg,#FFE9A8,#FFB38A 60%,#F2A0B8)"></div><div style="margin-top:6px;font-size:10.5px;color:#6E6B66">wallpaper.heic</div></div><footer>Finder<kbd>⌘5</kbd></footer></div>
+      <div class="card" id="c6"><header style="background:linear-gradient(#34C759,#28A745)"><div><b>Text</b><small>Yesterday</small></div><span class="app"></span></header><div class="body">hello@marquee.app</div><footer><span class="cat"><i></i>Work</span>17 characters<kbd>⌘6</kbd></footer></div>
     </div>
   </div>
 
@@ -282,7 +368,7 @@
     <svg class="logo" viewBox="0 0 512 512"><rect x="16" y="16" width="480" height="480" rx="116" fill="#1D1D1F"/><g fill="none" stroke="#FFCF1A" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"><path d="M112 196V128a16 16 0 0 1 16-16h68"/><path d="M400 316v68a16 16 0 0 1-16 16h-68"/></g><rect x="166" y="166" width="124" height="124" rx="20" fill="none" stroke="#FFCF1A" stroke-width="26"/><rect x="222" y="222" width="124" height="124" rx="20" fill="#FFCF1A"/></svg>
     <h1>Marquee</h1>
     <p>Free and open source, for macOS 13 to 27.</p>
-    <div class="meta">Screenshots · Recording · Measure · Colors · Clipboard history</div>
+    <div class="meta">Screenshots · Scrolling capture · Recording with camera · Measure · Colors · Clipboard history</div>
     <div class="url">marquee.nahid.bd</div>
   </div>
 </div>
@@ -309,15 +395,21 @@ function path(t, pts) {
   }
   const l = pts[pts.length - 1]; return [l[1], l[2]];
 }
+const center = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
 
 const meter = $('meter');
-for (let i = 0; i < 8; i++) meter.appendChild(document.createElement('b'));
+for (let i = 0; i < 6; i++) meter.appendChild(document.createElement('b'));
+// The tall thumbnail: rows of the stitched page.
+for (let i = 0; i < 16; i++) { const r = document.createElement('i'); r.style.top = (66 + i * 10) + 'px'; r.style.width = (50 + (i * 37) % 46) + 'px'; $('tall').appendChild(r); }
 
 // Key moments (seconds).
-const T = { title: 2.2, aio: 2.4, drag0: 4.2, drag1: 5.2, menu: 6.0, shot: 7.0, rec: 8.9, go: 11.4, recEnd: 13.4,
-            measure: 13.6, color: 16.5, clip: 18.9, end: 21.8, total: 24 };
+const T = { title: 2.2, aio: 2.4, drag0: 4.2, drag1: 5.2, pick: 5.8, area: 6.5, shot: 7.0,
+            scroll: 8.7, scrollEnd: 11.6, rec: 11.8, go: 14.3, recEnd: 16.3,
+            measure: 16.5, guide: 18.6, color: 19.6, clip: 22.0, paste: 24.4, end: 25.4, total: 27.6 };
 
 const SEL = { x0: 410, y0: 230, x1: 1052, y1: 472 };
+// The scrolling area: the window's content beside its sidebar.
+const AREA = { x: 392, y: 172, w: 696, h: 536 };
 
 function render(t) {
   // Title and end cards
@@ -328,11 +420,12 @@ function render(t) {
 
   // Captions
   const caps = [
-    [T.aio, T.shot + 1.6, 'All-in-One', 'One shortcut. Pick an area, then choose what to do.'],
-    [T.rec - .1, T.recEnd, 'Record with sound', 'Your mic, your Mac’s audio, or both.'],
-    [T.measure, T.color - .1, 'Measure anything', 'Distances and exact sizes, PixelSnap-style.'],
+    [T.aio, T.shot + 1.5, 'All-in-One', 'One shortcut. Screenshot and Record remember what you used last.'],
+    [T.scroll, T.scrollEnd, 'Scrolling capture', 'One long screenshot of anything that scrolls.'],
+    [T.rec - .1, T.recEnd, 'Record with sound and camera', 'Your mic, your Mac’s audio and a camera bubble.'],
+    [T.measure, T.color - .1, 'Measure anything', 'Distances, exact sizes and guides.'],
     [T.color, T.clip - .1, 'Pick any color', 'Copied as HEX, RGB, HSL or SwiftUI.'],
-    [T.clip, T.end, 'Clipboard history', 'Everything you copy, a ⇧⌘V away.'],
+    [T.clip, T.end, 'Clipboard history', 'Categories, link previews, one click to paste.'],
   ];
   let capOpacity = 0;
   for (const [a, b, h, s] of caps) {
@@ -344,13 +437,18 @@ function render(t) {
   // Keycaps
   const keys = [
     [T.aio + .2, T.aio + 1.3, ['⌥', '⇧', '⌘', 'A']],
-    [T.rec - .1, T.rec + .9, ['⌥', '⇧', '⌘', 'A'], 'then R'],
+    [T.scroll + .1, T.scroll + 1.0, ['⌥', '⇧', '⌘', 'A'], 'S'],
+    [T.rec - .1, T.rec + .9, ['⌥', '⇧', '⌘', 'A'], 'R'],
+    [T.guide - .1, T.guide + .7, ['V']],
     [T.clip + .1, T.clip + 1.1, ['⇧', '⌘', 'V']],
   ];
   let k = 0;
-  for (const [a, b, ks] of keys) {
+  for (const [a, b, ks, then] of keys) {
     const o = win(t, a, b, .15);
-    if (o > 0) { $('keycap').innerHTML = ks.map(x => `<kbd>${x}</kbd>`).join(''); k = o; css($('keycap'), { transform: `translateX(-50%) scale(${lerp(.9, 1, o)})` }); }
+    if (o > 0) {
+      $('keycap').innerHTML = ks.map(x => `<kbd>${x}</kbd>`).join('') + (then ? `<span>then</span><kbd>${then}</kbd>` : '');
+      k = o; css($('keycap'), { transform: `translateX(-50%) scale(${lerp(.9, 1, o)})` });
+    }
   }
   show($('keycap'), k);
 
@@ -375,13 +473,16 @@ function render(t) {
   const dragging = t >= T.drag0 && t < T.drag1;
   [...$('sel').querySelectorAll('.h')].forEach(h => h.style.opacity = dragging || recSetup ? 0 : 1);
   show($('selsize'), sel && sel.w > 2 && aioOn ? 1 : 0);
-  if (sel) { $('selsize').textContent = `${Math.round(sel.w)} × ${Math.round(sel.h)}`; css($('selsize'), { left: sel.x + 'px', top: (sel.y - 30) + 'px' }); }
+  if (sel) { $('selsize').textContent = `${Math.round(sel.w)} × ${Math.round(sel.h)}`; css($('selsize'), { left: sel.x + 'px', top: (sel.y - 32) + 'px' }); }
 
-  // Toolbar: bottom center first, under the selection after the drag.
+  // Toolbar: bottom center first, under the selection after the drag. The target icon on
+  // Screenshot shows the selection once there is one; clicking it swaps in the picker.
   const tb = $('toolbar');
   const tbW = tb.offsetWidth;
   const hasSel = t >= T.drag1;
-  $('tbsize').textContent = hasSel ? '642 × 242' : 'Full screen';
+  $('shotTgtIcon').innerHTML = hasSel
+    ? '<rect x="3" y="5" width="18" height="14" rx="1" stroke-dasharray="3 2"/>'
+    : '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 20h6"/>';
   const tbIn = prog(t, T.aio + .7, T.aio + 1.1, out);
   let tbO = aioOn ? tbIn : 0;
   if (dragging) tbO = 0;
@@ -390,38 +491,57 @@ function render(t) {
   const tby = hasSel ? SEL.y1 + 14 : 728 + (1 - tbIn) * 30;
   css(tb, { left: tbx + 'px', top: tby + 'px' });
   show(tb, tbO);
-
-  // Screenshot ▾ menu
-  const menuO = t >= T.menu && t < T.shot ? prog(t, T.menu, T.menu + .15, out) : 0;
-  const chev = $('chev').getBoundingClientRect();
-  css($('menu'), { left: (chev.left - 6) + 'px', top: (chev.bottom + 8) + 'px', transform: `scale(${lerp(.96, 1, menuO)})`, transformOrigin: 'top left' });
-  show($('menu'), menuO);
-  $('mi1').className = t > T.menu + .55 ? 'hl' : '';
+  $('shotTgt').className = 'tgt' + (t > T.pick - .25 && t < T.pick + .1 ? ' hot' : '');
+  const pickP = prog(t, T.pick, T.pick + .2, out);
+  show($('tbMain'), 1 - pickP);
+  show($('tbPick'), pickP);
+  css($('tbPick'), { transform: `translateX(${(1 - pickP) * 14}px)` });
+  $('pArea').className = 'tchip' + (t > T.area - .05 && t < T.shot ? ' press' : '');
 
   // Shutter and Quick Access
   show($('flash'), t >= T.shot ? .85 * (1 - prog(t, T.shot + .02, T.shot + .3, out)) : 0);
-  const thO = win(t, T.shot + .25, T.rec + .2, .3);
-  show($('thumb'), thO);
+  show($('thumb'), win(t, T.shot + .25, T.scroll + .3, .3));
   css($('thumb'), { transform: `translateX(${(1 - prog(t, T.shot + .25, T.shot + .6, out)) * -260}px)` });
-  $('thumb').querySelector('.btns').style.opacity = t > T.shot + 1.1 && t < T.rec ? 1 : 0;
-  const toast = [[T.shot + .35, T.shot + 1.7, 'Screenshot copied'], [T.color + 1.25, T.color + 2.3, '#FFCF1A copied']];
+  $('thumb').querySelector('.btns').style.opacity = t > T.shot + 1.0 && t < T.scroll ? 1 : 0;
+  const toast = [[T.shot + .35, T.shot + 1.6, 'Screenshot copied'], [T.color + 1.25, T.color + 2.3, '#FFCF1A copied'],
+                 [T.paste + .1, T.paste + 1.0, 'Pasted']];
   let to = 0;
   for (const [a, b, txt] of toast) { const o = win(t, a, b, .2); if (o > 0) { $('toasttxt').textContent = txt; to = o; } }
   show($('toast'), to);
   css($('toast'), { transform: `translateX(-50%) translateY(${(1 - to) * -8}px)` });
 
+  // ----- Scrolling capture -----
+  const scrollOn = t >= T.scroll + .9 && t < T.scrollEnd;
+  const scrollO = scrollOn ? prog(t, T.scroll + .9, T.scroll + 1.1) * (1 - prog(t, T.scrollEnd - .2, T.scrollEnd)) : 0;
+  css($('outline'), { left: (AREA.x - 4) + 'px', top: (AREA.y - 4) + 'px', width: (AREA.w + 8) + 'px', height: (AREA.h + 8) + 'px' });
+  show($('outline'), scrollO);
+  const sb = $('scrollbar');
+  css(sb, { left: (640 - sb.offsetWidth / 2) + 'px', top: '722px' });
+  show(sb, scrollO);
+  // The page scrolls up, then back to the top for the next scene.
+  const scrolled = 640 * prog(t, T.scroll + 1.3, T.scrollEnd - .7, x => x) * (1 - prog(t, T.scrollEnd + .1, T.scrollEnd + .5));
+  css($('doc'), { transform: `translateY(${-scrolled}px)` });
+  $('scrollpt').textContent = `${Math.round((AREA.h + (scrollOn ? scrolled : 640)) * 1.6).toLocaleString('en-US')} pt captured`;
+  $('done').className = 'gbtn pri' + (t > T.scrollEnd - .45 && t < T.scrollEnd ? ' press' : '');
+  show($('tall'), win(t, T.scrollEnd, T.rec + .9, .3));
+  css($('tall'), { transform: `translateX(${(1 - prog(t, T.scrollEnd, T.scrollEnd + .35, out)) * -160}px)` });
+
   // ----- Recording -----
   const rb = $('recbar');
   css(rb, { left: (640 - rb.offsetWidth / 2) + 'px', top: '726px' });
   show(rb, recSetup ? prog(t, T.rec + .7, T.rec + 1.0, out) * (1 - prog(t, T.rec + 1.6, T.rec + 1.8)) : 0);
-  [...meter.children].forEach((b, i) => { const v = .25 + .75 * Math.abs(Math.sin(t * 9 + i * 1.3) * Math.sin(t * 4.1 + i)); b.style.height = (3 + v * 11) + 'px'; });
+  [...meter.children].forEach((b, i) => { const v = .25 + .75 * Math.abs(Math.sin(t * 9 + i * 1.3) * Math.sin(t * 4.1 + i)); b.style.height = (4 + v * 10) + 'px'; });
+  // The camera bubble shows as soon as the toolbar does, and is recorded with the area.
+  const camO = t >= T.rec + .9 && t < T.recEnd ? prog(t, T.rec + .9, T.rec + 1.2, out) * (1 - prog(t, T.recEnd - .25, T.recEnd)) : 0;
+  css($('cam'), { left: '214px', top: '554px', transform: `scale(${lerp(.85, 1, camO)})` });
+  show($('cam'), camO);
   // Countdown 3, 2, 1, Go
   const cd0 = T.rec + 1.8;
   const step = Math.floor((t - cd0) / .4);
   const countO = t >= cd0 && t < T.go ? 1 - prog(t, T.go - .15, T.go) : 0;
   $('count').textContent = ['3', '2', '1', 'Go'][clamp(step, 0, 3)];
   const local = ((t - cd0) % .4) / .4;
-  css($('count'), { left: '565px', top: '345px', transform: `scale(${lerp(1.15, 1, out(clamp(local * 2)))})`, color: step >= 3 ? '#FF3B30' : '#1D1D1F' });
+  css($('count'), { left: '570px', top: '350px', transform: `scale(${lerp(1.15, 1, out(clamp(local * 2)))})`, color: step >= 3 ? '#FFCF1A' : '#fff' });
   show($('count'), countO);
   const recording = t >= T.go && t < T.recEnd;
   show($('recframe'), recording ? 1 - prog(t, T.recEnd - .2, T.recEnd) : 0);
@@ -435,29 +555,36 @@ function render(t) {
   const snapOn = t >= T.measure + 1.6 && t < T.color - .2;
   const mO = mOn ? prog(t, T.measure + .3, T.measure + .5) * (1 - prog(t, T.color - .4, T.color - .2)) : 0;
   const [mx, my] = path(t, [[T.measure + .3, 760, 640], [T.measure + 1.4, 880, 600]]);
-  // Distances to the window edges below the content, in this mock.
-  // Nearest edges: the sidebar, the window's right side, the button row and the window bottom.
-  const left = 390, right = 1090, top = 524, bottom = 710;
+  // Nearest edges: the sidebar, the window's right side, the text above and the window bottom.
+  const left = 390, right = 1090, top = 674, bottom = 710;
   css($('mh'), { left: left + 'px', top: my + 'px', width: (right - left) + 'px' });
-  css($('mv'), { left: mx + 'px', top: top + 'px', height: (bottom - top) + 'px' });
+  css($('mv'), { left: mx + 'px', top: '540px', height: (bottom - 540) + 'px' });
   $('mlh').textContent = `${Math.round(right - left)}`;
-  $('mlv').textContent = `${Math.round(bottom - top)}`;
+  $('mlv').textContent = `${Math.round(bottom - 540)}`;
   css($('mlh'), { left: (left + 12) + 'px', top: (my - 24) + 'px' });
-  css($('mlv'), { left: (mx + 8) + 'px', top: (top + 6) + 'px' });
+  css($('mlv'), { left: (mx + 8) + 'px', top: '548px' });
   const lineO = snapOn ? mO * (1 - prog(t, T.measure + 1.6, T.measure + 1.8)) : mO;
   ['mh', 'mv', 'mlh', 'mlv'].forEach(id => show($(id), lineO));
   // Drag around "Ship it" and snap to it.
-  const sp = prog(t, T.measure + 1.6, T.measure + 2.1);
+  const sp = prog(t, T.measure + 1.6, T.measure + 2.0);
   const snapRect = { x: 420, y: 480, w: 140, h: 44 };
   const loose = { x: 404, y: 466, w: 176, h: 72 };
-  const r = { x: lerp(loose.x, snapRect.x, prog(t, T.measure + 2.2, T.measure + 2.45, out)), y: lerp(loose.y, snapRect.y, prog(t, T.measure + 2.2, T.measure + 2.45, out)) };
-  r.w = lerp(lerp(0, loose.w, sp), snapRect.w, prog(t, T.measure + 2.2, T.measure + 2.45, out));
-  r.h = lerp(lerp(0, loose.h, sp), snapRect.h, prog(t, T.measure + 2.2, T.measure + 2.45, out));
+  const sq = prog(t, T.measure + 2.05, T.measure + 2.3, out);
+  const r = { x: lerp(loose.x, snapRect.x, sq), y: lerp(loose.y, snapRect.y, sq) };
+  r.w = lerp(lerp(0, loose.w, sp), snapRect.w, sq);
+  r.h = lerp(lerp(0, loose.h, sp), snapRect.h, sq);
   css($('snap'), { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
   show($('snap'), snapOn ? mO : 0);
   $('snaplabel').textContent = `${Math.round(r.w)} × ${Math.round(r.h)}`;
   css($('snaplabel'), { left: r.x + 'px', top: (r.y + r.h + 8) + 'px' });
   show($('snaplabel'), snapOn ? mO : 0);
+  // V adds a guide at the pointer; it snaps to the button's left edge.
+  const gO = t >= T.guide && t < T.color - .2 ? prog(t, T.guide, T.guide + .2, out) * mO : 0;
+  const gx = lerp(436, 420, prog(t, T.guide + .25, T.guide + .45, out));
+  css($('guide'), { left: (gx - 1) + 'px' });
+  css($('guidelabel'), { left: (gx + 6) + 'px', top: '600px' });
+  show($('guide'), gO);
+  show($('guidelabel'), gO);
 
   // ----- Color -----
   const cOn = t >= T.color + .2 && t < T.clip - .1;
@@ -469,36 +596,48 @@ function render(t) {
   css($('chip'), { left: '836px', top: '481px', transform: `translateY(${(1 - chipO) * 6}px)` });
   show($('chip'), chipO);
 
-  // ----- Clipboard -----
-  const clipIn = prog(t, T.clip + .4, T.clip + .8, out) * (1 - prog(t, T.end - .5, T.end - .1));
-  css($('clip'), { top: (800 - 270 * clipIn) + 'px' });
+  // ----- Clipboard: rises from the bottom edge; a click on a card pastes it -----
+  const clipIn = prog(t, T.clip + .4, T.clip + .8, out) * (1 - prog(t, T.paste + .05, T.paste + .35));
+  css($('clip'), { top: (800 - 296 * clipIn) + 'px' });
   show($('clip'), clipIn > 0 ? 1 : 0);
-  const sel3 = clamp(Math.floor((t - (T.clip + 1.0)) / .45), 0, 3);
-  ['c1', 'c2', 'c3', 'c4'].forEach((id, i) => $(id).className = 'card' + (i === sel3 ? ' on' : ''));
+  const hover = clamp(Math.floor((t - (T.clip + 1.0)) / .45), 0, 1);
+  ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach((id, i) => {
+    let cls = 'card' + (i === hover && t > T.clip + 1.0 ? ' on' : '');
+    if (i === 1 && t > T.paste - .12 && t < T.paste + .1) cls += ' press';
+    $(id).className = cls;
+  });
 
   // ----- Cursor -----
-  const tbChev = chev;
+  const [stx, sty] = center($('shotTgt'));
+  const [pax, pay] = center($('pArea'));
+  const [dnx, dny] = center($('done'));
+  const [c2x, c2y] = center($('c2'));
   const cur = path(t, [
     [T.aio, 900, 590],
     [T.aio + 1.6, 410, 230],             // to drag start
     [T.drag0, 410, 230],
     [T.drag1, SEL.x1, SEL.y1],           // drag
-    [T.drag1 + .3, SEL.x1, SEL.y1],
-    [T.menu - .05, tbChev.left + 10, tbChev.top + 19],
-    [T.menu + .5, tbChev.left + 10, tbChev.top + 19],
-    [T.menu + .6, tbChev.left + 40, tbChev.bottom + 26],
-    [T.shot + .5, tbChev.left + 40, tbChev.bottom + 26],
-    [T.rec + 1.3, 640, 756],             // Record button
+    [T.drag1 + .25, SEL.x1, SEL.y1],
+    [T.pick - .1, stx, sty],             // the target icon on Screenshot
+    [T.pick + .25, stx, sty],
+    [T.area - .1, pax, pay],             // Area
+    [T.shot + .5, pax, pay],
+    [T.scroll + 1.0, 760, 460],          // over the page while it scrolls
+    [T.scrollEnd - 1.0, 770, 470],
+    [T.scrollEnd - .5, dnx, dny],        // Done
+    [T.rec + 1.3, 920, 752],             // Record button
     [T.measure + .3, 760, 640],
     [T.measure + 1.4, 880, 600],
     [T.measure + 1.6, 404, 466],         // drag around Ship it
-    [T.measure + 2.1, 580, 538],
+    [T.measure + 2.0, 580, 538],
+    [T.guide - .2, 436, 560],            // where the guide goes
     [T.color + .2, 760, 600],
     [T.color + 1.0, 608, 502],
-    [T.clip + .2, 900, 670],
+    [T.clip + .9, 760, 600],
+    [T.paste - .3, c2x, c2y],            // click the link card
   ]);
   const cursorO = (t > T.title + .2 && t < T.end) ? 1 : 0;
-  const hideCursor = (t >= T.go && t < T.recEnd) || (t >= T.clip + .5);
+  const hideCursor = (t >= T.go && t < T.recEnd) || (t >= T.paste + .4);
   css($('cursor'), { left: cur[0] - 2 + 'px', top: cur[1] - 2 + 'px' });
   show($('cursor'), hideCursor ? 0 : cursorO);
 }

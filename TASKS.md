@@ -45,7 +45,7 @@ Status as of v0.5.14 (2026-10-17). Project context and conventions are in [CLAUD
 - [x] Issue updates bot: progress, fixed and released comments plus labels, driven by commit messages and the Release workflow
 
 **Site and docs**
-- [x] Landing page (ruler-yellow design) with the 24-second demo pinned in the hero
+- [x] Landing page (ruler-yellow design) with the 28-second demo pinned in the hero (re-rendered for the 0.5.14 UI: target picker, scrolling capture, camera bubble, guides, clipboard panel)
 - [x] README (What's new per release), CHANGELOG, HOW-IT-WORKS, SIGNING docs
 
 ## Releases
