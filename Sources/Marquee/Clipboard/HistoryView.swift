@@ -1,6 +1,28 @@
 import AppKit
 import SwiftUI
 
+/// The panel's outline: it sits on the bottom edge of the screen, so only the top corners
+/// are rounded. The border follows the same outline.
+struct TopRoundedRectangle: Shape {
+    var radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let r = min(radius, rect.width / 2, rect.height)
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
+        path.addArc(tangent1End: CGPoint(x: rect.minX, y: rect.minY),
+                    tangent2End: CGPoint(x: rect.minX + r, y: rect.minY), radius: r)
+        path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
+        path.addArc(tangent1End: CGPoint(x: rect.maxX, y: rect.minY),
+                    tangent2End: CGPoint(x: rect.maxX, y: rect.minY + r), radius: r)
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// The ⇧⌘V panel: search, filters and categories on top, cards below.
 @MainActor
 struct HistoryView: View {
     @ObservedObject var model: HistoryViewModel
@@ -13,7 +35,7 @@ struct HistoryView: View {
 
     var body: some View {
         let items = model.visibleItems
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             header(count: items.count)
             if items.isEmpty {
                 emptyState
@@ -21,39 +43,49 @@ struct HistoryView: View {
                 cards(items)
             }
         }
-        .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.top, 16)
+        .padding(.bottom, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .glassSurface(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .glassSurface(TopRoundedRectangle(radius: 26))
+        // A barely-there fill so every point of the panel takes clicks and scrolls.
+        .background(Color.black.opacity(0.001), in: TopRoundedRectangle(radius: 26))
         .onAppear { searchFocused = true }
         .onReceive(model.$focusToken) { _ in searchFocused = true }
+        .onChange(of: model.draft == nil) { closed in
+            if closed { searchFocused = true }
+        }
     }
 
     private func header(count: Int) -> some View {
-        HStack(spacing: 14) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search clipboard history", text: $model.query)
+        HStack(spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+                TextField("Search", text: $model.query)
                     .textFieldStyle(.plain)
+                    .font(.system(size: 13))
                     .focused($searchFocused)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .frame(width: 280)
-            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 12)
+            .frame(width: 230, height: 30)
+            .background(Color.primary.opacity(0.07), in: Capsule())
 
-            Picker("Filter", selection: $model.filter) {
-                ForEach(HistoryViewModel.Filter.allCases) { Text($0.rawValue).tag($0) }
+            if model.draft != nil {
+                CategoryEditor(draft: $model.draft, store: model.store) { category in
+                    model.filter = .category(category.id)
+                }
+            } else {
+                ClipFilterBar(selection: $model.filter, store: model.store, draft: $model.draft)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 420)
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            Text("\(count) items  ·  ↩ paste  ·  ⌘1–9 quick paste  ·  ⌘P pin  ·  ⌘⌫ delete")
-                .font(.caption)
+            Text("\(count) items  ·  click or ↩ to paste  ·  ⌘1–9 quick paste  ·  ⌘P pin")
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .fixedSize()
         }
         .padding(.horizontal, 20)
     }
@@ -65,6 +97,9 @@ struct HistoryView: View {
 
     private var emptyMessage: String {
         if !model.query.isEmpty { return "No matches" }
+        if case .category = model.filter {
+            return "Nothing in this category yet.\nRight-click an item and choose Add to Category."
+        }
         if model.store.items.isEmpty && PasteboardAccess.status != .allowed {
             return "macOS is limiting Marquee's clipboard access, so copies may not be recorded.\nAllow it in Settings → Clipboard."
         }
@@ -93,14 +128,16 @@ struct HistoryView: View {
                             thumbnail: thumbnail(for: item),
                             appIcon: thumbnails.appIcon(bundleID: item.sourceBundleID),
                             appColor: thumbnails.appColor(bundleID: item.sourceBundleID),
-                            fileIcon: item.filePaths?.first.map { thumbnails.fileIcon(path: $0) }
+                            fileIcon: item.filePaths?.first.map { thumbnails.fileIcon(path: $0) },
+                            category: model.store.category(for: item)
                         )
                         .id(item.id)
-                        .onTapGesture(count: 2) { onPaste(item) }
-                        .simultaneousGesture(TapGesture().onEnded { model.selection = index })
+                        .onTapGesture { onPaste(item) }
+                        .help("Click to paste")
                         .contextMenu {
                             Button("Paste") { onPaste(item) }
                             Button(item.pinned ? "Unpin" : "Pin") { onTogglePin(item) }
+                            CategoryMenu(item: item, store: model.store, draft: $model.draft)
                             Divider()
                             Button("Delete", role: .destructive) { onDelete(item) }
                         }
@@ -129,6 +166,9 @@ struct ClipCard: View {
     /// The source app's icon color; the header uses it, or the item kind's color without one.
     let appColor: PickedColor?
     let fileIcon: NSImage?
+    var category: ClipCategory? = nil
+
+    private static let corner: CGFloat = 16
 
     /// Text that is just a color (#FFCF1A, rgb(…), hsl(…)) gets a small swatch in front of it.
     private var color: PickedColor? {
@@ -146,7 +186,12 @@ struct ClipCard: View {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(headerLabel).font(.system(size: 13, weight: .semibold))
-                    Text(item.date, style: .relative).font(.system(size: 10)).opacity(0.85)
+                    // Minutes, hours or days; refreshed once a minute.
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        Text(CopiedAge.text(since: item.date, now: context.date))
+                    }
+                    .font(.system(size: 10))
+                    .opacity(0.85)
                 }
                 Spacer()
                 if let appIcon {
@@ -167,9 +212,20 @@ struct ClipCard: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(10)
 
-            HStack {
+            HStack(spacing: 6) {
                 if item.pinned {
                     Image(systemName: "pin.fill")
+                }
+                if let category {
+                    HStack(spacing: 4) {
+                        Circle().fill(category.tint.color).frame(width: 7, height: 7)
+                        Text(category.name).lineLimit(1)
+                    }
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(category.tint.color.opacity(0.18), in: Capsule())
+                    .accessibilityLabel("Category \(category.name)")
                 }
                 Text(footer).lineLimit(1)
                 Spacer()
@@ -184,12 +240,12 @@ struct ClipCard: View {
         }
         .frame(width: 230, height: 236)
         .background(Color(nsColor: .textBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: Self.corner, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: selected ? 3 : 1)
+            RoundedRectangle(cornerRadius: Self.corner, style: .continuous)
+                .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.1), lineWidth: selected ? 2.5 : 1)
         )
-        .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
+        .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
     }
 
     @ViewBuilder
@@ -200,10 +256,14 @@ struct ClipCard: View {
                 .font(.system(size: 12))
                 .lineLimit(9)
         case .link:
-            Text(item.text ?? "")
-                .font(.system(size: 12))
-                .foregroundStyle(Color.accentColor)
-                .lineLimit(6)
+            if let text = item.text, let url = URL(string: text) {
+                LinkCardContent(url: url, text: text)
+            } else {
+                Text(item.text ?? "")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.accentColor)
+                    .lineLimit(6)
+            }
         case .image:
             if let thumbnail {
                 Image(nsImage: thumbnail)
@@ -260,7 +320,10 @@ struct ClipCard: View {
             return text.hasPrefix("#") ? color.rgb : color.hex
         }
         switch item.kind {
-        case .text, .link:
+        case .link:
+            let host = item.text.flatMap { URL(string: $0)?.host }
+            return host.map { $0.hasPrefix("www.") ? String($0.dropFirst(4)) : $0 } ?? "Link"
+        case .text:
             return "\(item.text?.count ?? 0) characters"
         case .image:
             return item.sourceAppName ?? "Image"

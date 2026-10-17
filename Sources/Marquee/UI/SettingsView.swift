@@ -104,6 +104,7 @@ private struct ClipboardSettings: View {
     @AppStorage(Preferences.Key.historyLimit.rawValue) private var historyLimit = 500
     @AppStorage(Preferences.Key.autoPaste.rawValue) private var autoPaste = true
     @AppStorage(Preferences.Key.monitorPaused.rawValue) private var paused = false
+    @AppStorage(Preferences.Key.linkPreviews.rawValue) private var linkPreviews = true
     @State private var trusted = Paster.isTrusted
     @State private var access = PasteboardAccess.status
 
@@ -133,6 +134,12 @@ private struct ClipboardSettings: View {
                     Text("5,000 items").tag(5000)
                 }
                 Text("Pinned items are never removed. Items marked as concealed by password managers are never recorded.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Links") {
+                Toggle("Show link previews", isOn: $linkPreviews)
+                Text("Shows the page's title and image for copied links. Marquee loads them from the website when the link appears in your history. Links to your own network (like 192.168.x.x or .local) are never loaded.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

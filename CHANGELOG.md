@@ -4,6 +4,19 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+### Added
+- **More menu bar icons**: 14 more built-in symbols to choose from in Settings → Capture.
+- **Clipboard categories**: make categories with a name and a color, add any item to one (right-click → Add to Category), and filter by it. Items in a category are kept like pinned ones. Right-click a category to edit or delete it; deleting it keeps its items in history.
+- **Link previews in clipboard history**: copied links show the page's image, icon and title when the site provides them (Open Graph), and the site's name in the footer. Links to your own network are never loaded. Turn it off in Settings → Clipboard.
+
+### Changed
+- **Clipboard panel**: attached to the bottom of the screen with only its top corners rounded, capsule filter chips and search in the macOS 27 style, and smoother card corners with matching borders.
+- **Clipboard panel**: click a card to paste it straight into your app (the panel closes). Pasting an older item no longer moves it to the front. The panel stays open until you press Esc, paste, or click outside it.
+- **Clipboard times** show minutes, hours or days ("5 min ago") instead of counting seconds.
+
+### Fixed
+- **Scrolling the clipboard panel** with a Magic Mouse or trackpad could reach the app behind it (a browser would go back or forward). The panel now catches every scroll, and up/down scrolling moves the cards sideways.
+
 ## 0.5.9 — 2026-10-17
 
 ### Added

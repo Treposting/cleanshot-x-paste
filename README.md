@@ -133,10 +133,12 @@ Press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>⌘</kbd><kbd>A</kbd> and the toolbar app
 
 - **Remembers** text, links, images and files, along with the app each one came from.
 - **Image and video previews.** Copy an image or video file in Finder and its card shows a preview, with a play badge on videos, instead of the file icon.
+- **Link previews.** Copied links show the page's title, image and icon when the site has them (its Open Graph tags). Turn this off in Settings → Clipboard.
 - **Color swatches.** Copy a color like `#FFCF1A`, `rgb(255, 207, 26)` or `hsl(47, 100%, 55%)` and its card shows a small swatch in front of it.
 - **Cards in the source app's color.** Each card's header takes the main color of the app it came from.
-- **Opens with ⇧⌘V** as a panel along the bottom of the screen. Type to search, or filter by type.
-- **Pastes into the app you were using**, which stays in front the whole time.
+- **Opens with ⇧⌘V** as a panel attached to the bottom of the screen. Type to search, or filter by type.
+- **Categories.** Make your own categories with a name and a color (click **+**), then right-click any item → **Add to Category**. Items in a category are kept, like pinned ones. Right-click a category to edit or delete it; its items go back to the main history.
+- **Click to paste** into the app you were using, which stays in front the whole time. The panel closes when you paste, press Esc, or click outside it.
 - **Pin** items you reuse. Duplicates move to the front instead of piling up.
 - **Includes your screenshots.** Every one you copy also lands in history.
 
@@ -227,7 +229,7 @@ Out of the box only two shortcuts are set: **All-in-One** (<kbd>⌥</kbd><kbd>�
 
 ## Privacy
 
-- **No account and no uploads.** Captures and history never leave your Mac. The only network request is the daily update check to GitHub, which you can turn off in Settings.
+- **No account and no uploads.** Captures and history never leave your Mac. Marquee makes two kinds of network request, and you can turn both off in Settings: the daily update check to GitHub, and link previews, which load a copied link's title and image from its website (links to your own network are never loaded).
 - **Clipboard history** is stored in `~/Library/Application Support/Marquee/`. Clear it from **Clipboard** in the Marquee window at any time; pinned items are kept.
 - **The Library** keeps a copy of your last 300 captures in `~/Library/Application Support/Marquee/Library`. Clear it from **Library** at any time.
 - **Passwords are skipped.** Password managers mark what they copy with `org.nspasteboard.ConcealedType` or `TransientType`. Marquee never records those items.

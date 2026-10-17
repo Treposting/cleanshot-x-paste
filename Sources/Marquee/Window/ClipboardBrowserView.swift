@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Clipboard history in the Marquee window: browse, search, copy, pin and delete.
+/// Clipboard history in the Marquee window: browse, search, copy, pin, sort into categories, delete.
 @MainActor
 struct ClipboardBrowserView: View {
     @ObservedObject var store: ClipboardStore
@@ -9,45 +9,33 @@ struct ClipboardBrowserView: View {
 
     @AppStorage(Preferences.Key.monitorPaused.rawValue) private var paused = false
     @State private var query = ""
-    @State private var filter: HistoryViewModel.Filter = .all
+    @State private var filter: ClipFilter = .all
+    @State private var draft: CategoryDraft?
     @State private var thumbnails = ThumbnailCache()
     @State private var confirmClear = false
 
     private var items: [ClipItem] {
-        store.items.filter { item in
-            let kindMatches: Bool
-            switch filter {
-            case .all: kindMatches = true
-            case .text: kindMatches = item.kind == .text
-            case .links: kindMatches = item.kind == .link
-            case .images: kindMatches = item.kind == .image
-            case .files: kindMatches = item.kind == .file
-            case .pinned: kindMatches = item.pinned
-            }
-            let q = query.trimmingCharacters(in: .whitespaces)
-            return kindMatches && (q.isEmpty || item.searchableText.localizedCaseInsensitiveContains(q))
+        if case .category(let id) = filter, !store.categories.contains(where: { $0.id == id }) {
+            return store.items(matching: .all, query: query)
         }
+        return store.items(matching: filter, query: query)
     }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Text("Clipboard").font(.system(size: 20, weight: .bold))
-                HStack(spacing: 6) {
-                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                HStack(spacing: 7) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
                     TextField("Search", text: $query).textFieldStyle(.plain)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 12)
                 .frame(maxWidth: 260)
-                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(height: 30)
+                .background(Color.primary.opacity(0.07), in: Capsule())
                 Spacer()
-                Picker("Show", selection: $filter) {
-                    ForEach(HistoryViewModel.Filter.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 400)
                 Menu {
                     Toggle("Record clipboard history", isOn: Binding(get: { !paused }, set: { paused = !$0 }))
                     Divider()
@@ -60,7 +48,19 @@ struct ClipboardBrowserView: View {
                 .accessibilityLabel("Clipboard options")
             }
             .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
+
+            Group {
+                if draft != nil {
+                    CategoryEditor(draft: $draft, store: store) { category in filter = .category(category.id) }
+                } else {
+                    ClipFilterBar(selection: $filter, store: store, draft: $draft)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if paused {
                 Label("Clipboard history is paused. New copies aren't recorded.", systemImage: "pause.circle.fill")
@@ -76,7 +76,7 @@ struct ClipboardBrowserView: View {
                     Image(systemName: "list.clipboard")
                         .font(.system(size: 40, weight: .light))
                         .foregroundStyle(.secondary)
-                    Text(query.isEmpty ? "Copy something and it shows up here" : "No matches")
+                    Text(emptyTitle)
                         .font(.system(size: 15, weight: .semibold))
                     Text("Press ⇧⌘V anywhere to open the quick clipboard panel.")
                         .foregroundStyle(.secondary)
@@ -93,12 +93,14 @@ struct ClipboardBrowserView: View {
                                 thumbnail: thumbnail(for: item),
                                 appIcon: thumbnails.appIcon(bundleID: item.sourceBundleID),
                                 appColor: thumbnails.appColor(bundleID: item.sourceBundleID),
-                                fileIcon: item.filePaths?.first.map { thumbnails.fileIcon(path: $0) }
+                                fileIcon: item.filePaths?.first.map { thumbnails.fileIcon(path: $0) },
+                                category: store.category(for: item)
                             )
                             .onTapGesture(count: 2) { copy(item) }
                             .contextMenu {
                                 Button("Copy") { copy(item) }
                                 Button(item.pinned ? "Unpin" : "Pin") { store.togglePin(item) }
+                                CategoryMenu(item: item, store: store, draft: $draft)
                                 Divider()
                                 Button("Delete", role: .destructive) { store.remove(item) }
                             }
@@ -113,8 +115,14 @@ struct ClipboardBrowserView: View {
         .confirmationDialog("Clear clipboard history?", isPresented: $confirmClear) {
             Button("Clear", role: .destructive) { store.clear(keepPinned: true) }
         } message: {
-            Text("Pinned items are kept.")
+            Text("Pinned items and items in a category are kept.")
         }
+    }
+
+    private var emptyTitle: String {
+        if !query.isEmpty { return "No matches" }
+        if case .category = filter { return "Nothing in this category yet" }
+        return "Copy something and it shows up here"
     }
 
     private func thumbnail(for item: ClipItem) -> NSImage? {

@@ -6,10 +6,12 @@ import CryptoKit
 @MainActor
 final class ClipboardStore: ObservableObject {
     @Published private(set) var items: [ClipItem] = []
+    @Published private(set) var categories: [ClipCategory] = []
 
     let directory: URL
     let imagesDirectory: URL
     private var historyFile: URL { directory.appendingPathComponent("history.json") }
+    private var categoriesFile: URL { directory.appendingPathComponent("categories.json") }
     private var saveScheduled = false
 
     init() {
@@ -93,9 +95,10 @@ final class ClipboardStore: ObservableObject {
         scheduleSave()
     }
 
+    /// Clears history. With `keepPinned`, pinned items and items in a category stay.
     func clear(keepPinned: Bool) {
-        let removed = items.filter { !keepPinned || !$0.pinned }
-        items.removeAll { !keepPinned || !$0.pinned }
+        let removed = items.filter { !keepPinned || !$0.isKept }
+        items.removeAll { !keepPinned || !$0.isKept }
         removed.forEach { deleteFiles(of: $0) }
         scheduleSave()
     }
@@ -105,7 +108,7 @@ final class ClipboardStore: ObservableObject {
         var unpinnedSeen = 0
         var kept: [ClipItem] = []
         for item in items {
-            if item.pinned {
+            if item.isKept {
                 kept.append(item)
             } else if unpinnedSeen < limit {
                 unpinnedSeen += 1
@@ -115,6 +118,58 @@ final class ClipboardStore: ObservableObject {
             }
         }
         items = kept
+    }
+
+    // MARK: - Categories
+
+    @discardableResult
+    func addCategory(name: String, tint: ClipCategory.Tint) -> ClipCategory {
+        let category = ClipCategory(name: Self.cleanName(name), tint: tint)
+        categories.append(category)
+        saveCategories()
+        return category
+    }
+
+    func updateCategory(_ id: UUID, name: String, tint: ClipCategory.Tint) {
+        guard let index = categories.firstIndex(where: { $0.id == id }) else { return }
+        categories[index].name = Self.cleanName(name)
+        categories[index].tint = tint
+        saveCategories()
+    }
+
+    /// Deletes the category. Its items stay in history, just without a category.
+    func deleteCategory(_ id: UUID) {
+        categories.removeAll { $0.id == id }
+        for index in items.indices where items[index].categoryID == id {
+            items[index].categoryID = nil
+        }
+        trim()
+        saveCategories()
+        scheduleSave()
+    }
+
+    /// Puts an item in a category, or takes it out with `nil`.
+    func setCategory(_ id: UUID?, for item: ClipItem) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        items[index].categoryID = id.flatMap { id in categories.contains { $0.id == id } ? id : nil }
+        scheduleSave()
+    }
+
+    func category(for item: ClipItem) -> ClipCategory? {
+        item.categoryID.flatMap { id in categories.first { $0.id == id } }
+    }
+
+    private static func cleanName(_ name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Untitled" : String(trimmed.prefix(40))
+    }
+
+    private func saveCategories() {
+        do {
+            try JSONEncoder().encode(categories).write(to: categoriesFile, options: .atomic)
+        } catch {
+            NSLog("Marquee: could not save categories: \(error)")
+        }
     }
 
     private func deleteFiles(of item: ClipItem) {
@@ -151,6 +206,10 @@ final class ClipboardStore: ObservableObject {
     // MARK: - Persistence
 
     private func load() {
+        if let data = try? Data(contentsOf: categoriesFile),
+           let decoded = try? JSONDecoder().decode([ClipCategory].self, from: data) {
+            categories = decoded
+        }
         guard let data = try? Data(contentsOf: historyFile) else { return }
         do {
             items = try JSONDecoder().decode([ClipItem].self, from: data)

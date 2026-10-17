@@ -27,6 +27,7 @@ enum Preferences {
         case menuBarIcon
         case menuBarIconTemplate
         case copyPasteSound
+        case linkPreviews
     }
 
     static var defaults: UserDefaults { .standard }
@@ -72,6 +73,7 @@ enum Preferences {
             Key.menuBarIcon.rawValue: "camera.viewfinder",
             Key.menuBarIconTemplate.rawValue: true,
             Key.copyPasteSound.rawValue: true,
+            Key.linkPreviews.rawValue: true,
         ])
     }
 
@@ -85,6 +87,8 @@ enum Preferences {
     static var overlayTimeout: Int { defaults.integer(forKey: Key.overlayTimeout.rawValue) }
     static var historyLimit: Int { max(10, defaults.integer(forKey: Key.historyLimit.rawValue)) }
     static var autoPaste: Bool { defaults.bool(forKey: Key.autoPaste.rawValue) }
+    /// Fetch titles and images for copied links from their websites.
+    static var linkPreviews: Bool { defaults.bool(forKey: Key.linkPreviews.rawValue) }
 
     static var recordFPS: Int { defaults.integer(forKey: Key.recordFPS.rawValue) == 60 ? 60 : 30 }
     static var recordShowCursor: Bool { defaults.bool(forKey: Key.recordShowCursor.rawValue) }

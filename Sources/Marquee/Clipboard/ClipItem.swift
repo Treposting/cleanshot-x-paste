@@ -38,6 +38,11 @@ struct ClipItem: Codable, Identifiable, Hashable {
     var sourceBundleID: String?
     var date: Date
     var pinned: Bool
+    /// The user's category for this item, if any. Items in a category are never trimmed.
+    var categoryID: UUID? = nil
+
+    /// Kept when history is trimmed or cleared.
+    var isKept: Bool { pinned || categoryID != nil }
 
     init(kind: Kind, text: String? = nil, filePaths: [String]? = nil, imageName: String? = nil,
          contentHash: String, sourceAppName: String?, sourceBundleID: String?) {

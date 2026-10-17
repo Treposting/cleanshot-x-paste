@@ -11,15 +11,12 @@ final class KeyablePanel: NSPanel {
 
 @MainActor
 final class HistoryViewModel: ObservableObject {
-    enum Filter: String, CaseIterable, Identifiable {
-        case all = "All", text = "Text", links = "Links", images = "Images", files = "Files", pinned = "Pinned"
-        var id: String { rawValue }
-    }
-
     @Published var query = "" { didSet { selection = 0 } }
-    @Published var filter: Filter = .all { didSet { selection = 0 } }
+    @Published var filter: ClipFilter = .all { didSet { selection = 0 } }
     @Published var selection = 0
     @Published var focusToken = UUID()
+    /// A category being made or edited inline; panel shortcuts pause while it's open.
+    @Published var draft: CategoryDraft?
 
     let store: ClipboardStore
     private var cancellable: AnyCancellable?
@@ -30,20 +27,10 @@ final class HistoryViewModel: ObservableObject {
     }
 
     var visibleItems: [ClipItem] {
-        store.items.filter { item in
-            let kindMatches: Bool
-            switch filter {
-            case .all: kindMatches = true
-            case .text: kindMatches = item.kind == .text
-            case .links: kindMatches = item.kind == .link
-            case .images: kindMatches = item.kind == .image
-            case .files: kindMatches = item.kind == .file
-            case .pinned: kindMatches = item.pinned
-            }
-            guard kindMatches else { return false }
-            let q = query.trimmingCharacters(in: .whitespaces)
-            return q.isEmpty || item.searchableText.localizedCaseInsensitiveContains(q)
+        if case .category(let id) = filter, !store.categories.contains(where: { $0.id == id }) {
+            return store.items(matching: .all, query: query)
         }
+        return store.items(matching: filter, query: query)
     }
 
     var selectedItem: ClipItem? {
@@ -57,10 +44,16 @@ final class HistoryViewModel: ObservableObject {
         selection = min(max(0, selection + delta), count - 1)
     }
 
+    /// Fresh search each time the panel opens; a chosen category stays chosen.
     func reset() {
         query = ""
-        filter = .all
+        if case .category(let id) = filter, store.categories.contains(where: { $0.id == id }) {
+            // keep it
+        } else {
+            filter = .all
+        }
         selection = 0
+        draft = nil
         focusToken = UUID()
     }
 }
@@ -73,6 +66,8 @@ final class HistoryPanelController: NSObject, NSWindowDelegate {
     private let thumbnails = ThumbnailCache()
     private var panel: KeyablePanel!
     private var keyMonitor: Any?
+    private var scrollMonitor: Any?
+    private var outsideClickMonitor: Any?
 
     private let panelHeight: CGFloat = 330
 
@@ -95,6 +90,9 @@ final class HistoryPanelController: NSObject, NSWindowDelegate {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
+        // Set explicitly so the see-through glass still catches clicks and scrolls; otherwise
+        // they fall through to the window underneath (a browser then swipes back or forward).
+        panel.ignoresMouseEvents = false
         panel.becomesKeyOnlyIfNeeded = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         panel.delegate = self
@@ -118,30 +116,34 @@ final class HistoryPanelController: NSObject, NSWindowDelegate {
         let mouse = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main
         else { return }
+        // Attached to the bottom edge of the screen (over the Dock), so only its top corners
+        // are rounded. Sideways it stays clear of a Dock on the left or right.
         let visible = screen.visibleFrame
-        panel.setFrame(NSRect(x: visible.minX, y: visible.minY, width: visible.width, height: panelHeight),
+        panel.setFrame(NSRect(x: visible.minX, y: screen.frame.minY, width: visible.width, height: panelHeight),
                        display: true)
         model.reset()
         panel.makeKeyAndOrderFront(nil)
         installKeyMonitor()
+        installMouseMonitors()
     }
 
+    /// The panel closes on Esc, after pasting, or on a click outside it. Losing focus alone
+    /// (switching apps, a notification) leaves it open; click it to type in it again.
     func hide() {
         panel.orderOut(nil)
-        if let keyMonitor {
-            NSEvent.removeMonitor(keyMonitor)
-            self.keyMonitor = nil
+        for monitor in [keyMonitor, scrollMonitor, outsideClickMonitor].compactMap({ $0 }) {
+            NSEvent.removeMonitor(monitor)
         }
+        keyMonitor = nil
+        scrollMonitor = nil
+        outsideClickMonitor = nil
     }
 
-    func windowDidResignKey(_ notification: Notification) {
-        hide()
-    }
-
+    /// Pastes straight into the app you were using and closes the panel. The item keeps its
+    /// place in history.
     private func paste(_ item: ClipItem) {
         store.writeToPasteboard(item)
         monitor.ignoreCurrentContents()
-        store.touch(item)
         hide()
         if Preferences.autoPaste && Paster.isTrusted {
             Sounds.play(.paste)
@@ -150,6 +152,48 @@ final class HistoryPanelController: NSObject, NSWindowDelegate {
             Sounds.play(.copy)
             if Preferences.autoPaste { Paster.pasteIntoFrontApp() }
         }
+    }
+
+    // MARK: - Mouse
+
+    private func installMouseMonitors() {
+        if outsideClickMonitor == nil {
+            // Clicks in other apps arrive here; clicks in the panel don't.
+            outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(
+                matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self, self.panel.isVisible,
+                          !NSMouseInRect(NSEvent.mouseLocation, self.panel.frame, false) else { return }
+                    self.hide()
+                }
+            }
+        }
+        if scrollMonitor == nil {
+            // Cards scroll sideways, so an up/down scroll (mouse wheel, Magic Mouse) moves them too.
+            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                guard let self, event.window === self.panel,
+                      abs(event.scrollingDeltaY) > abs(event.scrollingDeltaX) else { return event }
+                return Self.sideways(event) ?? event
+            }
+        }
+    }
+
+    /// The same scroll event with its vertical movement turned into horizontal movement.
+    private static func sideways(_ event: NSEvent) -> NSEvent? {
+        guard let cg = event.cgEvent?.copy() else { return nil }
+        let integerAxes: [(CGEventField, CGEventField)] = [
+            (.scrollWheelEventDeltaAxis1, .scrollWheelEventDeltaAxis2),
+            (.scrollWheelEventPointDeltaAxis1, .scrollWheelEventPointDeltaAxis2),
+        ]
+        for (vertical, horizontal) in integerAxes {
+            cg.setIntegerValueField(horizontal, value: cg.getIntegerValueField(vertical))
+            cg.setIntegerValueField(vertical, value: 0)
+        }
+        cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2,
+                               value: cg.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1))
+        cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
+        return NSEvent(cgEvent: cg)
     }
 
     // MARK: - Keyboard
@@ -165,6 +209,14 @@ final class HistoryPanelController: NSObject, NSWindowDelegate {
     /// Returns true when the event was consumed.
     private func handle(_ event: NSEvent) -> Bool {
         let command = event.modifierFlags.contains(.command)
+        // While naming a category, keys belong to the editor; Esc closes it.
+        if model.draft != nil {
+            if event.keyCode == 53 {
+                model.draft = nil
+                return true
+            }
+            return false
+        }
         switch event.keyCode {
         case 53: // Esc
             hide()

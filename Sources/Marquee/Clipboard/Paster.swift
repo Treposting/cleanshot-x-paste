@@ -16,7 +16,7 @@ enum Paster {
     static func pasteIntoFrontApp() {
         guard isTrusted else {
             requestAccess()
-            Toast.show("Copied — allow Accessibility to auto-paste", duration: 2.5)
+            Toast.show("Copied. Allow Marquee in Accessibility to paste directly", duration: 3)
             return
         }
         // Give the previous app a moment to become key again after our panel hides.
