@@ -25,6 +25,20 @@ enum MenuBarIcon {
         Preset(symbol: "ruler", title: "Ruler"),
         Preset(symbol: "eyedropper", title: "Eyedropper"),
         Preset(symbol: "record.circle", title: "Record"),
+        Preset(symbol: "dot.viewfinder", title: "Focus"),
+        Preset(symbol: "scope", title: "Scope"),
+        Preset(symbol: "square.dashed", title: "Dashed square"),
+        Preset(symbol: "circle.dashed", title: "Dashed circle"),
+        Preset(symbol: "rectangle.dashed.badge.record", title: "Record area"),
+        Preset(symbol: "photo", title: "Photo"),
+        Preset(symbol: "doc.on.clipboard", title: "Clipboard"),
+        Preset(symbol: "paperclip", title: "Paperclip"),
+        Preset(symbol: "pencil.tip", title: "Pencil"),
+        Preset(symbol: "wand.and.stars", title: "Magic wand"),
+        Preset(symbol: "sparkles", title: "Sparkles"),
+        Preset(symbol: "bolt", title: "Bolt"),
+        Preset(symbol: "star", title: "Star"),
+        Preset(symbol: "m.square", title: "M"),
     ]
 
     /// The user's image, copied here so it survives the original being moved or deleted.
@@ -40,7 +54,9 @@ enum MenuBarIcon {
             return image
         }
         let symbol = presets.contains { $0.symbol == Preferences.menuBarIcon } ? Preferences.menuBarIcon : defaultSymbol
+        // A symbol missing on an older macOS would leave the menu bar item blank.
         return NSImage(systemSymbolName: symbol, accessibilityDescription: "Marquee")
+            ?? NSImage(systemSymbolName: defaultSymbol, accessibilityDescription: "Marquee")
     }
 
     static func select(_ symbol: String) {
