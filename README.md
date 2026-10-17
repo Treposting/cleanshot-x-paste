@@ -37,8 +37,42 @@ A free, open-source menu-bar app for macOS that takes screenshots and screen rec
 
 ## What's new
 
+**0.5.14**
+- **Ignore apps in clipboard history.** Nothing copied in Passwords, Keychain Access or popular password managers is saved, even when the app doesn't mark it as private. Add any other app in **Settings → Clipboard → Ignored apps**, or right-click an item → **Ignore Copies from <App>**.
+
+**0.5.13**
+- **Liquid Glass everywhere.** Every page of the Marquee window shares one macOS 26/27 design: a large title, the page's controls grouped on glass, and matching rounded cards. The update window, onboarding, Quick Access and toolbars match.
+
+**0.5.12**
+- **Updates install from anywhere.** Opened from the disk image or a protected copy, an update now installs into Applications (asking for your password if your account needs it) and closes any other running copy first, instead of failing with "can't replace itself".
+
+**0.5.11**
+- **All-in-One remembers.** **Screenshot** and **Record** repeat what you used last; the small icon on each switches between Area, Full Screen, Window and Scrolling, with a back button.
+- **Scrolling capture** <sup>macOS 14+</sup>. One long screenshot of anything that scrolls, by hand or with **Auto-scroll**. Fixed headers and bottom bars appear once.
+- **Camera bubble.** Show yourself in recordings with any connected camera, in a circle, rounded, square or portrait bubble with an optional glow border. Drag it anywhere, even while recording.
+- **Your voice as its own file.** Optionally save the microphone as an .m4a next to the recording.
+
+**0.5.10**
+- **Clipboard categories.** Make categories with a name and a color, add any item, and filter by them. Items in a category are kept like pinned ones.
+- **Link previews.** Copied links show the page's title, image and icon.
+- **A better clipboard panel.** It sits on the bottom edge of the screen, a click pastes, times read "5 min ago", and scrolling no longer reaches the app behind it.
+- **14 more menu bar icons.**
+
+**0.5.9**
+- **Measure guides.** Press H or V to add a guide; guides snap to edges, show the distance between them, and move with a drag or the arrow keys.
+- **Measure on every display** at once.
+
+**0.5.8**
+- **Image and video previews** for files you copy in Finder.
+
+**0.5.7**
+- **A new Home** with All-in-One up front and your latest capture beside it.
+- **Choose the menu bar icon**, or use your own image.
+- **Copy and paste sounds**, color swatches for copied colors, and clipboard cards tinted by their app.
+- **Fixed:** picking a color could freeze the screen; Restart Marquee didn't reopen the app.
+
 **0.5.6**
-- **All-in-One, everything in one bar.** **Screenshot** and **Record** remember what you used last (area, full screen or window), so one click repeats it. Click the small icon on either button to pick another target, or press ‹ to go back. Copy, Copy Text, Pin and Color sit next to them as icons. Copy the area with <kbd>⌘</kbd><kbd>C</kbd>, and use F / W (⇧F / ⇧W to record) as quick keys.
+- **All-in-One, everything in one bar.** **Screenshot ▾** and **Record ▾** each offer Selected Area, Full Screen or Window. Copy the area with <kbd>⌘</kbd><kbd>C</kbd>, and use F / W (⇧F / ⇧W to record) as quick keys.
 - **Record a window.** Hover to highlight it, click to record.
 - **Permissions stay after updates.** Releases are signed with one stable certificate (from 0.5.5), and the Permissions page can repair stale entries.
 - **Dark-mode app icon**, a Liquid Glass All-in-One toolbar, and shortcuts grouped by category.
@@ -343,12 +377,10 @@ site/            Website (deployed to GitHub Pages)
 
 ### Releasing
 
-1. Go to **Actions → Release → Run workflow**.
-2. Enter a version such as `0.5.0`, or leave it empty to release the version already in `Resources/Info.plist`.
+1. Move the CHANGELOG's "Unreleased" notes under a dated heading such as `## 0.5.15 — 2026-10-20`, add a **What's new** entry to this README, and add a line under **Releases** in [TASKS.md](TASKS.md).
+2. Go to **Actions → Release → Run workflow** and enter the version, or leave it empty to release the version already in `Resources/Info.plist`.
 
-The workflow updates `Info.plist` if the version changed, builds the universal DMG, creates the `v0.5.0` tag, and publishes a GitHub Release with the DMG and generated release notes.
-
-Pushing a `v*` tag by hand also works.
+The workflow updates `Info.plist` if the version changed, runs the tests, signs and builds the universal DMG and update zip, creates the tag, and publishes a GitHub Release. The release notes are that version's CHANGELOG section followed by install steps; Marquee's update window shows them. Don't push tags by hand.
 
 ## License
 

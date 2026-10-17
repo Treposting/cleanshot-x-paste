@@ -126,6 +126,29 @@ jobs:
             echo "::error::A signing certificate is configured, but the app was signed ad hoc."
             exit 1
           fi
+      # The release notes (also shown in Marquee's update window) are this version's
+      # CHANGELOG section, followed by the install steps.
+      - name: Release notes from the changelog
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v v="$VERSION" 'index($0, "## " v " ") == 1 {found = 1; next} found && /^## / {exit} found {print}' \
+            CHANGELOG.md | sed '/./,$!d' > build/changes.md
+          if [[ ! -s build/changes.md ]]; then
+            echo "::warning::CHANGELOG.md has no section for $VERSION; the release notes only have install steps."
+          fi
+          {
+            cat build/changes.md
+            echo
+            echo "### Install"
+            echo "1. Download **Marquee-$VERSION.dmg** below and drag Marquee into Applications."
+            echo "2. On first launch, right-click the app and choose **Open** (the build isn't notarized yet)."
+            echo "3. Allow **Screen & System Audio Recording** when macOS asks."
+            echo
+            echo "Already using Marquee? It updates itself: **Check for Updates…** in the menu bar."
+            echo
+            echo "Universal build for Apple Silicon and Intel, macOS 13 or later."
+          } > build/release-notes.md
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -137,13 +160,7 @@ jobs:
           files: |
             build/*.dmg
             build/*.zip
-          body: |
-            ### Install
-            1. Download **Marquee-${{ steps.version.outputs.version }}.dmg** below and drag Marquee into Applications.
-            2. On first launch, right-click the app and choose **Open** (the build isn't notarized yet).
-            3. Allow **Screen & System Audio Recording** when macOS asks.
-
-            Universal build for Apple Silicon and Intel, macOS 13 or later.
+          body_path: build/release-notes.md
 
       - name: Tell fixed issues about the release
         uses: actions/github-script@v7

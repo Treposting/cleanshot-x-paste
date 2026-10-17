@@ -10,7 +10,7 @@ A free, open-source macOS menu-bar app: screenshots, screen recording with audio
 
 - Swift package, `swift-tools-version 5.9`, Swift 5 language mode, macOS 13+. No third-party dependencies.
 - Needs **Xcode 26** (macOS 26 SDK, for Liquid Glass). CI uses the `macos-26` runner.
-- `swift build`, `swift test` (about 24 tests in `Tests/MarqueeTests`)
+- `swift build`, `swift test` (about 60 tests in `Tests/MarqueeTests`)
 - `make app` builds `build/Marquee.app`; `make run` builds and opens it; `make dmg` builds the universal DMG and update zip.
 - CI (`.github/workflows/build.yml`) runs on every push: tests, the universal app/DMG, a self-signed signing check, and icon previews. Build only on a Mac; there's no Linux build.
 
@@ -58,7 +58,10 @@ The **Issue updates** workflow (`.github/workflows/issue-updates.yml`, logic in 
 ## Releasing
 
 - Never push tags by hand. Run **Actions → Release** (`release.yml`, workflow_dispatch) with a `version` input like `0.5.7`. It bumps `Resources/Info.plist`, runs tests, signs with the project certificate, builds the DMG + zip and publishes the GitHub Release. Then pull `main` (the workflow pushes a "Release vX" commit).
-- Before releasing, move the CHANGELOG "Unreleased" notes under a dated version heading.
+- Before releasing, update the docs for that version, every time:
+  - CHANGELOG.md: move the "Unreleased" notes under a dated heading (`## 0.5.15 — 2026-10-20`). The Release workflow copies this section into the GitHub release notes, which Marquee's update window shows to users, so write it for them.
+  - README.md: add a short **What's new** entry at the top of that section.
+  - TASKS.md: add a line under **Releases**, bump the "Status as of" line, and update **Done** / **Needs checking** for what changed.
 - Signing: secrets `MACOS_SIGNING_IDENTITY`, `MACOS_SIGNING_CERT_PASSWORD`, `MACOS_SIGNING_CERT_P12` hold a self-signed certificate. The workflow signs by the identity's SHA-1 hash and fails if the app comes out ad-hoc signed. Keeping one certificate is what lets macOS keep permissions across updates; never change it. See docs/SIGNING.md.
 - The in-app updater only installs builds signed with the same certificate.
 
