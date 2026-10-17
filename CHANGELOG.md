@@ -4,6 +4,8 @@ All notable changes to Marquee. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.5.10 — 2026-10-17
+
 ### Added
 - **More menu bar icons**: 14 more built-in symbols to choose from in Settings → Capture.
 - **Clipboard categories**: make categories with a name and a color, add any item to one (right-click → Add to Category), and filter by it. Items in a category are kept like pinned ones. Right-click a category to edit or delete it; deleting it keeps its items in history.
